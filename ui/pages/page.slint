@@ -1,0 +1,63 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Card } from "@ui/card.slint";
+import { Navigate } from "../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../globals.slint";
+import { PageBody, TitleText, Subtext } from "../components.slint";
+
+export component MainPagePage inherits PageBody {
+    TitleText {
+        text: "SeedQR Tool";
+    }
+
+    Subtext {
+        text: "Copy a SeedQR by hand, then check your copy is right.";
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.lg;
+        title: "Nothing is saved";
+        body: "Your seed is held in memory only while this app is open. It is never written to this device, and this app cannot read seeds stored in Seed Vault.";
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    Button {
+        width: 100%;
+        text: "Scan SeedQR";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.scan-seed()) {
+                Navigate.format-page({ });
+            }
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Enter Seed Words";
+        variant: ButtonVariant.secondary;
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            Actions.reset();
+            Navigate.entry-page({ });
+        }
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+}

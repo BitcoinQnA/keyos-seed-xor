@@ -1,0 +1,113 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, Subtext } from "../../components.slint";
+
+export component TranscribePagePage inherits PageBody {
+
+    NavHeader {
+        title: SeedState.block-label;
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: SeedState.block-range;
+    }
+
+    // The zoomed block. One square per module: filled means mark it.
+    Rectangle {
+        width: 100%;
+        height: self.width;
+        background: #ffffff;
+        border-radius: Theme.radius-md;
+        clip: true;
+
+        grid := Rectangle {
+            property <length> cell: (parent.width - 16px) / SeedState.block-size;
+            x: 8px;
+            y: 8px;
+            width: parent.width - 16px;
+            height: parent.height - 16px;
+
+            for value[i] in SeedState.block-cells: Rectangle {
+                x: Math.mod(i, SeedState.block-size) * grid.cell;
+                y: Math.floor(i / SeedState.block-size) * grid.cell;
+                width: grid.cell;
+                height: grid.cell;
+                background: value == 1 ? #000000 : (value == 2 ? #e8e8e8 : #ffffff);
+                border-width: 1px;
+                border-color: value == 2 ? #e0e0e0 : #c9c9c9;
+            }
+        }
+    }
+
+    HorizontalLayout {
+        height: 96px;
+        spacing: Theme.spacing-md;
+        alignment: center;
+
+        Rectangle {
+            width: 96px;
+            height: 96px;
+            background: #ffffff;
+            border-radius: Theme.radius-sm;
+
+            Image {
+                width: parent.width - 8px;
+                height: parent.height - 8px;
+                x: 4px;
+                y: 4px;
+                source: SeedState.minimap;
+                image-rendering: pixelated;
+                image-fit: contain;
+            }
+        }
+
+        Text {
+            text: "Grey squares fall outside the code. Leave them blank.";
+            color: Theme.palette-muted;
+            font-family: Theme.font-primary;
+            font-size: Fonts.sm;
+            font-weight: Theme.font-weight-medium;
+            wrap: word-wrap;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+        }
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    HorizontalLayout {
+        spacing: Theme.spacing-sm;
+
+        Button {
+            text: "Previous";
+            variant: ButtonVariant.secondary;
+            size: ControlSize.sm;
+            horizontal-stretch: 1;
+            disabled: SeedState.block-index == 0;
+            clicked => {
+                Actions.prev-block();
+            }
+        }
+
+        Button {
+            text: SeedState.last-block ? "Done" : "Next";
+            size: ControlSize.sm;
+            horizontal-stretch: 1;
+            clicked => {
+                if (!Actions.next-block()) {
+                    Navigate.verify-page({ });
+                }
+            }
+        }
+    }
+}

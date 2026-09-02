@@ -1,0 +1,103 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, WordPill, Subtext } from "../../components.slint";
+
+export component ReviewPagePage inherits PageBody {
+    NavHeader {
+        title: "Check Your Words";
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: "Tap any word to correct it.";
+    }
+
+    HorizontalLayout {
+        spacing: Theme.spacing-lg;
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: Theme.spacing-xl;
+            for w[i] in SeedState.review-left: WordPill {
+                number: i + 1 + SeedState.left-offset;
+                word: w;
+                clicked => {
+                    Actions.edit-word(i + SeedState.left-offset);
+                    Navigate.backward();
+                }
+            }
+        }
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: Theme.spacing-xl;
+            for w[i] in SeedState.review-right: WordPill {
+                number: i + 1 + SeedState.right-offset;
+                word: w;
+                clicked => {
+                    Actions.edit-word(i + SeedState.right-offset);
+                    Navigate.backward();
+                }
+            }
+        }
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    if (SeedState.review-page-count > 1): HorizontalLayout {
+        height: 44px;
+        spacing: Theme.spacing-sm;
+
+        Button {
+            text: "Previous";
+            variant: ButtonVariant.secondary;
+            size: ControlSize.sm;
+            horizontal-stretch: 1;
+            disabled: SeedState.review-page == 0;
+            clicked => {
+                Actions.review-prev-page();
+            }
+        }
+
+        Button {
+            text: "Next";
+            variant: ButtonVariant.secondary;
+            size: ControlSize.sm;
+            horizontal-stretch: 1;
+            disabled: SeedState.review-page + 1 >= SeedState.review-page-count;
+            clicked => {
+                Actions.review-next-page();
+            }
+        }
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+
+    Button {
+        width: 100%;
+        text: "Continue";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.commit-words()) {
+                Navigate.format-page({ });
+            }
+        }
+    }
+}

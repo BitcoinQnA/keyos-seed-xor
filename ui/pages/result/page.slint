@@ -1,0 +1,74 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, TitleText, Subtext } from "../../components.slint";
+
+export component ResultPagePage inherits PageBody {
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    // A fixed-width child of a VerticalLayout sits left unless a centring
+    // HorizontalLayout wraps it.
+    HorizontalLayout {
+        alignment: center;
+
+        Rectangle {
+        width: 88px;
+        height: 88px;
+        border-radius: 44px;
+        background: SeedState.verify-ok ? Theme.color-success : Theme.palette-danger;
+
+        Text {
+            width: parent.width;
+            height: parent.height;
+            text: SeedState.verify-ok ? "\u{2713}" : "!";
+            color: #ffffff;
+            font-family: Theme.font-primary;
+            font-size: 44px;
+            font-weight: Theme.font-weight-bold;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+        }
+    }
+
+    TitleText {
+        text: SeedState.verify-title;
+    }
+
+    Subtext {
+        text: SeedState.verify-detail;
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    Button {
+        width: 100%;
+        text: "Transcribe Again";
+        variant: ButtonVariant.secondary;
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            Actions.restart-transcription();
+            Navigate.overview-page({ });
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Finish";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            Actions.reset();
+            Navigate.return-home();
+        }
+    }
+}
