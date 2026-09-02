@@ -1,26 +1,10 @@
 <svg width="110" height="110" viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- SeedQR glyph. No background: the KeyOS launcher supplies the badge plate,
-       so anything full-canvas here renders as a slab over the round tile.
-       7x7 module grid, 9px modules, 63px overall (~57% of the canvas). -->
-  <g stroke="#ffffff" stroke-width="4.5" fill="none">
-    <rect x="25.75" y="25.75" width="22.5" height="22.5" rx="3"/>
-    <rect x="61.75" y="25.75" width="22.5" height="22.5" rx="3"/>
-    <rect x="25.75" y="61.75" width="22.5" height="22.5" rx="3"/>
-  </g>
-  <g fill="#ffffff">
-    <rect x="32.5" y="32.5" width="9" height="9" rx="1.5"/>
-    <rect x="68.5" y="32.5" width="9" height="9" rx="1.5"/>
-    <rect x="32.5" y="68.5" width="9" height="9" rx="1.5"/>
-    <rect x="50.5" y="23.5" width="9" height="9" rx="1.5"/>
-    <rect x="50.5" y="41.5" width="9" height="9" rx="1.5"/>
-    <rect x="23.5" y="50.5" width="9" height="9" rx="1.5"/>
-    <rect x="41.5" y="50.5" width="9" height="9" rx="1.5"/>
-  </g>
-  <g fill="#d4a394">
-    <rect x="59.5" y="59.5" width="9" height="9" rx="1.5"/>
-    <rect x="77.5" y="59.5" width="9" height="9" rx="1.5"/>
-    <rect x="68.5" y="68.5" width="9" height="9" rx="1.5"/>
-    <rect x="59.5" y="77.5" width="9" height="9" rx="1.5"/>
-    <rect x="77.5" y="77.5" width="9" height="9" rx="1.5"/>
+  <!-- Seed XOR glyph: the XOR operator. No background: the KeyOS launcher
+       supplies the badge plate, so anything full-canvas here renders as a slab
+       over the round tile. 64px overall (~58% of the canvas). -->
+  <circle cx="55" cy="55" r="29.25" stroke="#ffffff" stroke-width="5.5" fill="none"/>
+  <g stroke="#d4a394" stroke-width="5.5" stroke-linecap="round">
+    <line x1="25.75" y1="55" x2="84.25" y2="55"/>
+    <line x1="55" y1="25.75" x2="55" y2="84.25"/>
   </g>
 </svg>
