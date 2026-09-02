@@ -1,0 +1,58 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Card } from "@ui/card.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions } from "../../globals.slint";
+import { PageBody, NavHeader, Subtext } from "../../components.slint";
+
+export component VerifyPagePage inherits PageBody {
+
+    NavHeader {
+        title: "Check Your Copy";
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: "Scan the code you just made. It gets compared against the words you were copying.";
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.lg;
+        title: "Before you scan";
+        body: "Lay your copy flat under even light with a clear border around it. Nothing is written to this device either way.";
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    Button {
+        width: 100%;
+        text: "Scan My Copy";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.verify-scan()) {
+                Navigate.result-page({ });
+            }
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Skip Check";
+        variant: ButtonVariant.ghost;
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            Actions.skip-verify();
+            Navigate.result-page({ });
+        }
+    }
+}

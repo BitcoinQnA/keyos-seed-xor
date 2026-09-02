@@ -1,0 +1,83 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Card } from "@ui/card.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, Subtext } from "../../components.slint";
+
+// One seed in: the source to split, or one part of a set being combined. Which
+// one it is, and where a successful load goes next, are decided in Rust and
+// arrive as `load-title` and `after-load`.
+export component LoadPagePage inherits PageBody {
+
+    // 0 load another part, 1 choose a part count, 2 show the seed.
+    function go-onward() {
+        if (SeedState.after-load == 1) {
+            Navigate.count-page({ });
+        } else if (SeedState.after-load == 2) {
+            Navigate.words-page({ });
+        } else {
+            // Same page, next part. Replacing keeps the back stack from filling
+            // up with one entry per part.
+            Navigate.load-page({ replace: true });
+        }
+    }
+
+    NavHeader {
+        title: SeedState.load-title;
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: SeedState.load-hint;
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.md;
+        title: "Nothing is saved";
+        body: "What you load stays in memory until you leave this app. It is never written to this device.";
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+
+    Button {
+        width: 100%;
+        text: "Scan SeedQR";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.load-scan()) {
+                root.go-onward();
+            }
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Enter Seed Words";
+        variant: ButtonVariant.secondary;
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            Actions.begin-entry();
+            Navigate.entry-page({ });
+        }
+    }
+}

@@ -1,0 +1,15 @@
+# SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[package]
+name = "seed-core"
+version = "0.1.0"
+edition = "2021"
+
+# No KeyOS or Slint dependency, so this builds and tests on the host.
+
+[dependencies]
+qrcode = { version = "0.12", default-features = false }
+bip39 = { version = "2.2", features = ["zeroize"] }
+sha2 = "0.10"
+zeroize = { version = "1.8", features = ["zeroize_derive"] }

@@ -1,0 +1,214 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, WordField, WordPill, Subtext } from "../../components.slint";
+
+export component EntryPagePage inherits PageBody {
+    // The on-screen keyboard covers the bottom 306px, so everything needed while
+    // typing lives in the top 454px. The full word list is a separate page, at
+    // firmware sizing, rather than squeezed in under the keyboard.
+    property <bool> complete: SeedState.entry-complete;
+
+    changed complete => {
+        if (self.complete) {
+            field.dismiss();
+        }
+    }
+
+    NavHeader {
+        title: SeedState.load-title;
+        back => {
+            field.dismiss();
+            // Throws away what was typed here and nothing else: a half-entered
+            // part must not take the parts already collected with it.
+            Actions.cancel-entry();
+            Navigate.backward();
+        }
+    }
+
+    // Every part of a set is the same length, so once the first one is in the
+    // choice is made and the buttons go away rather than sitting there refusing.
+    if (SeedState.word-count-locked): Text {
+        height: 44px;
+        text: "Part 1 has " + SeedState.word-count + " words, so this one does too.";
+        color: Theme.palette-muted;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        wrap: word-wrap;
+    }
+
+    if (!SeedState.word-count-locked): HorizontalLayout {
+        height: 44px;
+        spacing: Theme.spacing-sm;
+
+        Button {
+            text: "12 Words";
+            size: ControlSize.sm;
+            variant: SeedState.word-count == 12 ? ButtonVariant.primary : ButtonVariant.secondary;
+            horizontal-stretch: 1;
+            clicked => {
+                Actions.set-word-count(12);
+            }
+        }
+
+        Button {
+            text: "24 Words";
+            size: ControlSize.sm;
+            variant: SeedState.word-count == 24 ? ButtonVariant.primary : ButtonVariant.secondary;
+            horizontal-stretch: 1;
+            clicked => {
+                Actions.set-word-count(24);
+            }
+        }
+    }
+
+    field := WordField {
+        width: 100%;
+        label: SeedState.entry-complete
+            ? "All " + SeedState.word-count + " words entered"
+            : "Word " + (SeedState.active-slot + 1) + " of " + SeedState.word-count;
+        placeholder: "First letters";
+        accept-text: "Done";
+        value <=> SeedState.entry-text;
+
+        changed(text) => {
+            Actions.entry-changed(text);
+        }
+
+        accepted => {
+            self.dismiss();
+        }
+    }
+
+    // Suggestions sit directly under the field, well clear of the keyboard.
+    Rectangle {
+        height: 52px;
+
+        if (SeedState.suggestions.length == 0): Text {
+            width: parent.width;
+            height: parent.height;
+            text: SeedState.entry-complete
+                ? "Every word is in. Check them on the next screen."
+                : "Type the first few letters, then pick the word.";
+            color: Theme.palette-muted;
+            font-family: Theme.font-primary;
+            font-size: Fonts.xs;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            wrap: word-wrap;
+        }
+
+        HorizontalLayout {
+            width: parent.width;
+            height: parent.height;
+            spacing: Theme.spacing-sm;
+
+            for s in SeedState.suggestions: Button {
+                text: s;
+                size: ControlSize.sm;
+                variant: ButtonVariant.secondary;
+                horizontal-stretch: 1;
+                clicked => {
+                    Actions.accept-word(s);
+                }
+            }
+        }
+    }
+
+    HorizontalLayout {
+        height: 44px;
+        spacing: Theme.spacing-sm;
+
+        Button {
+            text: "Delete Last";
+            size: ControlSize.sm;
+            variant: ButtonVariant.secondary;
+            horizontal-stretch: 1;
+            disabled: SeedState.words-entered == 0;
+            clicked => {
+                Actions.remove-last-word();
+            }
+        }
+
+        Button {
+            text: "Hide Keyboard";
+            size: ControlSize.sm;
+            variant: ButtonVariant.secondary;
+            horizontal-stretch: 1;
+            clicked => {
+                field.dismiss();
+            }
+        }
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+
+    // Every word entered so far, scrollable so earlier words can be checked
+    // without leaving the page. Sits below the keyboard line.
+    property <int> slot: SeedState.active-slot;
+    property <length> row-pitch: 80px;
+
+    changed slot => {
+        // Keep the word being typed in view, without binding viewport-y, which
+        // would fight the user dragging the list.
+        list.viewport-y = -min(
+            max(0px, self.slot * self.row-pitch - (list.height - 56px) / 2),
+            max(0px, list.viewport-height - list.height));
+    }
+
+    Text {
+        text: SeedState.words-entered + " of " + SeedState.word-count + " entered";
+        color: Theme.palette-muted;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        font-weight: Theme.font-weight-semibold;
+        horizontal-alignment: center;
+    }
+
+    list := Flickable {
+        vertical-stretch: 1;
+        interactive: true;
+        viewport-width: self.width;
+        viewport-height: SeedState.word-count * root.row-pitch;
+
+        VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            spacing: root.row-pitch - 56px;
+
+            for w[i] in SeedState.all-words: WordPill {
+                number: i + 1;
+                word: w;
+                highlight: i == SeedState.active-slot;
+                clicked => {
+                    Actions.edit-word(i);
+                }
+            }
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Continue";
+        size: ControlSize.md;
+        full-width: true;
+        disabled: !SeedState.entry-complete;
+        clicked => {
+            field.dismiss();
+            Navigate.review-page({ });
+        }
+    }
+}

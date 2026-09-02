@@ -1,0 +1,98 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, WordPill, Subtext } from "../../components.slint";
+
+// One seed on screen: a single part, or the seed a set of parts rebuilt. Two
+// columns of six, paginated, matching the firmware seed word view.
+export component WordsPagePage inherits PageBody {
+
+    NavHeader {
+        title: SeedState.view-title;
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: SeedState.view-hint;
+    }
+
+    HorizontalLayout {
+        spacing: Theme.spacing-lg;
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: Theme.spacing-xl;
+            for w[i] in SeedState.view-left: WordPill {
+                number: i + 1 + SeedState.view-left-offset;
+                word: w;
+            }
+        }
+
+        VerticalLayout {
+            horizontal-stretch: 1;
+            spacing: Theme.spacing-xl;
+            for w[i] in SeedState.view-right: WordPill {
+                number: i + 1 + SeedState.view-right-offset;
+                word: w;
+            }
+        }
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    if (SeedState.view-page-count > 1): HorizontalLayout {
+        height: 44px;
+        spacing: Theme.spacing-sm;
+
+        Button {
+            text: "Previous";
+            variant: ButtonVariant.secondary;
+            size: ControlSize.sm;
+            horizontal-stretch: 1;
+            disabled: SeedState.view-page == 0;
+            clicked => {
+                Actions.view-prev-page();
+            }
+        }
+
+        Button {
+            text: "Next";
+            variant: ButtonVariant.secondary;
+            size: ControlSize.sm;
+            horizontal-stretch: 1;
+            disabled: SeedState.view-page + 1 >= SeedState.view-page-count;
+            clicked => {
+                Actions.view-next-page();
+            }
+        }
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+
+    Button {
+        width: 100%;
+        text: SeedState.view-cta;
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.transcribe-view()) {
+                Navigate.format-page({ });
+            }
+        }
+    }
+}

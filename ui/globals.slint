@@ -1,0 +1,138 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+export global Fonts {
+    out property <length> xs: 18px;
+    out property <length> sm: 20px;
+    out property <length> md: 22px;
+    out property <length> lg: 24px;
+    out property <length> xl: 26px;
+}
+
+// App-wide state pushed from Rust, and the actions Rust implements.
+// Nothing here is persisted. Every value is cleared when the app exits.
+
+export global SeedState {
+    // Which flow is running. Split and combine share most of their pages, so
+    // the copy and the onward route are switched on this rather than duplicated.
+    in-out property <bool> splitting: false;
+
+    // Where to go once a seed has been loaded, decided by Rust because it
+    // depends on the flow and on how many parts are still outstanding.
+    // 0 load another part, 1 choose a part count, 2 show the seed.
+    in-out property <int> after-load: 0;
+
+    // Loading a seed (the source to split, or one part to combine)
+    in-out property <string> load-title: "";
+    in-out property <string> load-hint: "";
+
+    // Word entry
+    in-out property <int> word-count: 12;
+    // Set once the first part is in: every later part has to match its length.
+    in-out property <bool> word-count-locked: false;
+    in-out property <[string]> suggestions;
+    in-out property <string> entry-text: "";
+    in-out property <int> active-slot: 0;
+    in-out property <int> words-entered: 0;
+    // Every slot, in order, for the scrollable list on the entry page.
+    in-out property <[string]> all-words;
+    in-out property <bool> entry-complete: false;
+    in-out property <string> entry-error: "";
+
+    // Review, sized like the firmware seed word view: two columns of six,
+    // paginated for 24 words.
+    in-out property <[string]> review-left;
+    in-out property <[string]> review-right;
+    in-out property <int> left-offset: 0;
+    in-out property <int> right-offset: 6;
+    in-out property <int> review-page: 0;
+    in-out property <int> review-page-count: 1;
+
+    // Parts
+    in-out property <int> part-count: 2;
+    in-out property <[string]> part-labels;
+    in-out property <string> parts-summary: "";
+    in-out property <bool> show-checksum: false;
+    in-out property <string> checksum-word: "";
+
+    // The seed on show: one part, or the combined result. Same layout as review.
+    in-out property <string> view-title: "";
+    in-out property <string> view-hint: "";
+    in-out property <string> view-cta: "";
+    in-out property <[string]> view-left;
+    in-out property <[string]> view-right;
+    in-out property <int> view-left-offset: 0;
+    in-out property <int> view-right-offset: 6;
+    in-out property <int> view-page: 0;
+    in-out property <int> view-page-count: 1;
+
+    // Loaded seed, for the transcription flow
+    in-out property <bool> loaded: false;
+    in-out property <int> seed-word-count: 0;
+    in-out property <string> source-label: "";
+
+    // Format choice
+    in-out property <string> standard-label: "";
+    in-out property <string> compact-label: "";
+    in-out property <string> format-label: "";
+    in-out property <int> qr-width: 0;
+    in-out property <image> qr-preview;
+    in-out property <image> minimap;
+
+    // Transcription blocks
+    in-out property <int> block-size: 7;
+    in-out property <int> block-count: 0;
+    in-out property <int> block-index: 0;
+    in-out property <bool> last-block: false;
+    in-out property <string> block-label: "";
+    in-out property <string> block-range: "";
+    // One entry per cell: 0 light, 1 dark, 2 outside the code
+    in-out property <[int]> block-cells;
+
+    // Verification
+    in-out property <string> verify-title: "";
+    in-out property <string> verify-detail: "";
+    in-out property <bool> verify-ok: false;
+}
+
+export global Actions {
+    // Each callback that can fail returns false so the page stays put.
+
+    // Flows
+    callback start-split();
+    callback start-combine();
+    callback set-part-count(int);
+    callback do-split() -> bool;
+    callback toggle-checksum();
+
+    // Loading a seed, either by scan or by typing words
+    callback load-scan() -> bool;
+    callback begin-entry();
+    callback cancel-entry();
+
+    // Word entry
+    callback set-word-count(int);
+    callback entry-changed(string);
+    callback accept-word(string);
+    callback remove-last-word();
+    callback commit-words() -> bool;
+    callback edit-word(int);
+    callback review-next-page();
+    callback review-prev-page();
+
+    // Viewing a seed and handing it to the transcription flow
+    callback view-part(int);
+    callback view-next-page();
+    callback view-prev-page();
+    callback transcribe-view() -> bool;
+
+    // Transcription
+    callback choose-format(bool) -> bool;
+    callback next-block() -> bool;
+    callback prev-block();
+    callback verify-scan() -> bool;
+    callback skip-verify();
+    callback restart-transcription();
+
+    callback reset();
+}

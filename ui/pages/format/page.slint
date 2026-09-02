@@ -1,0 +1,89 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Card } from "@ui/card.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, Subtext } from "../../components.slint";
+
+export component FormatPagePage inherits PageBody {
+
+    NavHeader {
+        title: "Choose a format";
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: SeedState.source-label + ", " + SeedState.seed-word-count + " words";
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.md;
+        title: "Standard";
+        body: "Each word as a four digit index. The format described in the SeedSigner SeedQR spec and the one most tools produce.";
+        footer: SeedState.standard-label;
+    }
+
+    Button {
+        width: 100%;
+        text: "Transcribe Standard";
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            if (Actions.choose-format(false)) {
+                Navigate.overview-page({ });
+            }
+        }
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.md;
+        title: "Compact";
+        body: "The raw seed entropy as bytes. A smaller grid with fewer squares to mark, but fewer tools read it.";
+        footer: SeedState.compact-label;
+    }
+
+    Button {
+        width: 100%;
+        text: "Transcribe Compact";
+        variant: ButtonVariant.secondary;
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            if (Actions.choose-format(true)) {
+                Navigate.overview-page({ });
+            }
+        }
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    Button {
+        width: 100%;
+        text: "Start Over";
+        variant: ButtonVariant.ghost;
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            Actions.reset();
+            Navigate.return-home();
+        }
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+}

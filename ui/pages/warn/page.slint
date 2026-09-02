@@ -1,0 +1,71 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Card } from "@ui/card.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, Subtext } from "../../components.slint";
+
+// The last screen before the parts exist. The failure this is warning about is
+// silent, so it gets a page of its own rather than a line someone scrolls past.
+export component WarnPagePage inherits PageBody {
+
+    NavHeader {
+        title: "Before You Split";
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: "Read this. Losing one part does not produce an error.";
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.lg;
+        title: "All " + SeedState.part-count + " parts, every time";
+        body: "There is no threshold and no spare. Lose one part and the seed is gone, along with anything held on it.";
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.lg;
+        title: "A missing part gives you the wrong wallet";
+        body: "Combining only some of the parts still produces a valid seed. It opens a real, empty wallet and looks exactly like success. Nothing tells you a part is missing.";
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.md;
+        title: "Each part is a seed";
+        body: "Anyone who finds one part finds a working seed, so store each one the way you would store the original.";
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+
+    Button {
+        width: 100%;
+        text: "Split Seed";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.do-split()) {
+                Navigate.parts-page({ });
+            }
+        }
+    }
+}
