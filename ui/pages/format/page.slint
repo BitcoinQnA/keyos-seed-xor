@@ -5,7 +5,7 @@ import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
 import { Button } from "@ui/button.slint";
 import { Card } from "@ui/card.slint";
 import { Navigate } from "../../gen/navigate.slint";
-import { SeedState, Actions } from "../../globals.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
 import { PageBody, NavHeader, Subtext } from "../../components.slint";
 
 export component FormatPagePage inherits PageBody {
@@ -13,13 +13,12 @@ export component FormatPagePage inherits PageBody {
     NavHeader {
         title: "Choose a format";
         back => {
-            Actions.reset();
-            Navigate.return-home();
+            Navigate.backward();
         }
     }
 
     Subtext {
-        text: SeedState.seed-word-count + " words loaded from " + SeedState.source-label;
+        text: SeedState.source-label + ", " + SeedState.seed-word-count + " words";
     }
 
     Card {
@@ -77,5 +76,14 @@ export component FormatPagePage inherits PageBody {
             Actions.reset();
             Navigate.return-home();
         }
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
     }
 }

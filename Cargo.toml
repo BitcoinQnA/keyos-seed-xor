@@ -19,7 +19,7 @@ slint-keyos-platform = { path = ".foundation-sdk/current/lib/keyos/slint-keyos-p
 foundation-themes = { path = ".foundation-sdk/current/lib/keyos/sdk/crates/foundation-themes" }
 security = { path = ".foundation-sdk/current/lib/keyos/api/security" }
 seed-core = { path = "crates/seed-core" }
-bip39 = "2.2"
+bip39 = { version = "2.2", features = ["zeroize"] }
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
 
 [build-dependencies]

@@ -426,6 +426,7 @@ dependencies = [
  "bitcoin_hashes 0.14.101",
  "serde",
  "unicode-normalization",
+ "zeroize",
 ]
 
 [[package]]

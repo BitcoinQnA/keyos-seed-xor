@@ -1,0 +1,103 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Card } from "@ui/card.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, Subtext } from "../../components.slint";
+
+// How many parts. Splitting picks the number to produce, combining declares the
+// number to expect, so the same three buttons serve both.
+export component CountPagePage inherits PageBody {
+
+    NavHeader {
+        title: "How Many Parts";
+        back => {
+            Navigate.backward();
+        }
+    }
+
+    Subtext {
+        text: SeedState.splitting
+            ? "Choose how many parts to split this seed into."
+            : "Choose how many parts you are putting back together.";
+    }
+
+    HorizontalLayout {
+        height: 56px;
+        spacing: Theme.spacing-sm;
+
+        Button {
+            text: "2";
+            size: ControlSize.md;
+            variant: SeedState.part-count == 2 ? ButtonVariant.primary : ButtonVariant.secondary;
+            horizontal-stretch: 1;
+            clicked => {
+                Actions.set-part-count(2);
+            }
+        }
+
+        Button {
+            text: "3";
+            size: ControlSize.md;
+            variant: SeedState.part-count == 3 ? ButtonVariant.primary : ButtonVariant.secondary;
+            horizontal-stretch: 1;
+            clicked => {
+                Actions.set-part-count(3);
+            }
+        }
+
+        Button {
+            text: "4";
+            size: ControlSize.md;
+            variant: SeedState.part-count == 4 ? ButtonVariant.primary : ButtonVariant.secondary;
+            horizontal-stretch: 1;
+            clicked => {
+                Actions.set-part-count(4);
+            }
+        }
+    }
+
+    if (SeedState.splitting): Card {
+        width: 100%;
+        size: ControlSize.md;
+        title: "More parts is not more safety";
+        body: "Every extra part is another thing that has to survive and another place the seed can be lost. Two parts in two places is a real improvement. Four is only better if you genuinely have four safe places.";
+    }
+
+    if (!SeedState.splitting): Card {
+        width: 100%;
+        size: ControlSize.md;
+        title: "Combining seeds you already hold";
+        body: "This screen also makes a new wallet. Combine seeds you already have and you get a fresh seed derived from all of them, with nothing about the originals changed.";
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+
+    Button {
+        width: 100%;
+        text: "Continue";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (SeedState.splitting) {
+                Navigate.warn-page({ });
+            } else {
+                Navigate.load-page({ });
+            }
+        }
+    }
+}

@@ -49,6 +49,17 @@ export component ResultPagePage inherits PageBody {
         vertical-stretch: 1;
     }
 
+    if (SeedState.splitting): Button {
+        width: 100%;
+        text: "Back to Parts";
+        variant: ButtonVariant.secondary;
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            Navigate.parts-page({ });
+        }
+    }
+
     Button {
         width: 100%;
         text: "Transcribe Again";

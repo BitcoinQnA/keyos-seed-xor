@@ -20,3 +20,9 @@ support-url = "https://foundation.xyz"
 
 [permissions]
 template = ["gui-app"]
+
+# Random bytes for the generated parts, and nothing else. GetRandom sits in the
+# `device-secrets.general-status` group and is auto-allowed, so a third-party
+# signed app can hold it. It cannot read the master seed: that is GetSeed, which
+# is Foundation-only and deliberately absent.
+"os/security" = ["GetRandom"]

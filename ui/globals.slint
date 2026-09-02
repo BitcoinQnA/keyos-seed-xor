@@ -13,8 +13,23 @@ export global Fonts {
 // Nothing here is persisted. Every value is cleared when the app exits.
 
 export global SeedState {
+    // Which flow is running. Split and combine share most of their pages, so
+    // the copy and the onward route are switched on this rather than duplicated.
+    in-out property <bool> splitting: false;
+
+    // Where to go once a seed has been loaded, decided by Rust because it
+    // depends on the flow and on how many parts are still outstanding.
+    // 0 load another part, 1 choose a part count, 2 show the seed.
+    in-out property <int> after-load: 0;
+
+    // Loading a seed (the source to split, or one part to combine)
+    in-out property <string> load-title: "";
+    in-out property <string> load-hint: "";
+
     // Word entry
     in-out property <int> word-count: 12;
+    // Set once the first part is in: every later part has to match its length.
+    in-out property <bool> word-count-locked: false;
     in-out property <[string]> suggestions;
     in-out property <string> entry-text: "";
     in-out property <int> active-slot: 0;
@@ -33,7 +48,25 @@ export global SeedState {
     in-out property <int> review-page: 0;
     in-out property <int> review-page-count: 1;
 
-    // Loaded seed
+    // Parts
+    in-out property <int> part-count: 2;
+    in-out property <[string]> part-labels;
+    in-out property <string> parts-summary: "";
+    in-out property <bool> show-checksum: false;
+    in-out property <string> checksum-word: "";
+
+    // The seed on show: one part, or the combined result. Same layout as review.
+    in-out property <string> view-title: "";
+    in-out property <string> view-hint: "";
+    in-out property <string> view-cta: "";
+    in-out property <[string]> view-left;
+    in-out property <[string]> view-right;
+    in-out property <int> view-left-offset: 0;
+    in-out property <int> view-right-offset: 6;
+    in-out property <int> view-page: 0;
+    in-out property <int> view-page-count: 1;
+
+    // Loaded seed, for the transcription flow
     in-out property <bool> loaded: false;
     in-out property <int> seed-word-count: 0;
     in-out property <string> source-label: "";
@@ -64,7 +97,20 @@ export global SeedState {
 
 export global Actions {
     // Each callback that can fail returns false so the page stays put.
-    callback scan-seed() -> bool;
+
+    // Flows
+    callback start-split();
+    callback start-combine();
+    callback set-part-count(int);
+    callback do-split() -> bool;
+    callback toggle-checksum();
+
+    // Loading a seed, either by scan or by typing words
+    callback load-scan() -> bool;
+    callback begin-entry();
+    callback cancel-entry();
+
+    // Word entry
     callback set-word-count(int);
     callback entry-changed(string);
     callback accept-word(string);
@@ -73,11 +119,20 @@ export global Actions {
     callback edit-word(int);
     callback review-next-page();
     callback review-prev-page();
+
+    // Viewing a seed and handing it to the transcription flow
+    callback view-part(int);
+    callback view-next-page();
+    callback view-prev-page();
+    callback transcribe-view() -> bool;
+
+    // Transcription
     callback choose-format(bool) -> bool;
     callback next-block() -> bool;
     callback prev-block();
     callback verify-scan() -> bool;
     callback skip-verify();
     callback restart-transcription();
+
     callback reset();
 }

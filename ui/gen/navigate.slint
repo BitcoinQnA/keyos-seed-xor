@@ -42,14 +42,23 @@ export global Navigate {
     // 
     callback main-page(NavigateOptions);
     
+    // /count
+    callback count-page(NavigateOptions);
+    
     // /entry
     callback entry-page(NavigateOptions);
     
     // /format
     callback format-page(NavigateOptions);
     
+    // /load
+    callback load-page(NavigateOptions);
+    
     // /overview
     callback overview-page(NavigateOptions);
+    
+    // /parts
+    callback parts-page(NavigateOptions);
     
     // /result
     callback result-page(NavigateOptions);
@@ -62,16 +71,27 @@ export global Navigate {
     
     // /verify
     callback verify-page(NavigateOptions);
+    
+    // /warn
+    callback warn-page(NavigateOptions);
+    
+    // /words
+    callback words-page(NavigateOptions);
 }
 
 export global RoutePath {
     out property <string> main-page : "";
+    out property <string> count-page : "/count";
     out property <string> entry-page : "/entry";
     out property <string> format-page : "/format";
+    out property <string> load-page : "/load";
     out property <string> overview-page : "/overview";
+    out property <string> parts-page : "/parts";
     out property <string> result-page : "/result";
     out property <string> review-page : "/review";
     out property <string> transcribe-page : "/transcribe";
     out property <string> verify-page : "/verify";
+    out property <string> warn-page : "/warn";
+    out property <string> words-page : "/words";
 }
 

@@ -7,27 +7,19 @@ import { Navigate } from "../../gen/navigate.slint";
 import { SeedState, Actions, Fonts } from "../../globals.slint";
 import { PageBody, NavHeader, WordPill, Subtext } from "../../components.slint";
 
-export component ReviewPagePage inherits PageBody {
-    // 0 load another part, 1 choose a part count, 2 show the seed.
-    function go-onward() {
-        if (SeedState.after-load == 1) {
-            Navigate.count-page({ });
-        } else if (SeedState.after-load == 2) {
-            Navigate.words-page({ });
-        } else {
-            Navigate.load-page({ });
-        }
-    }
+// One seed on screen: a single part, or the seed a set of parts rebuilt. Two
+// columns of six, paginated, matching the firmware seed word view.
+export component WordsPagePage inherits PageBody {
 
     NavHeader {
-        title: "Check Your Words";
+        title: SeedState.view-title;
         back => {
             Navigate.backward();
         }
     }
 
     Subtext {
-        text: "Tap any word to correct it.";
+        text: SeedState.view-hint;
     }
 
     HorizontalLayout {
@@ -36,26 +28,18 @@ export component ReviewPagePage inherits PageBody {
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: Theme.spacing-xl;
-            for w[i] in SeedState.review-left: WordPill {
-                number: i + 1 + SeedState.left-offset;
+            for w[i] in SeedState.view-left: WordPill {
+                number: i + 1 + SeedState.view-left-offset;
                 word: w;
-                clicked => {
-                    Actions.edit-word(i + SeedState.left-offset);
-                    Navigate.backward();
-                }
             }
         }
 
         VerticalLayout {
             horizontal-stretch: 1;
             spacing: Theme.spacing-xl;
-            for w[i] in SeedState.review-right: WordPill {
-                number: i + 1 + SeedState.right-offset;
+            for w[i] in SeedState.view-right: WordPill {
+                number: i + 1 + SeedState.view-right-offset;
                 word: w;
-                clicked => {
-                    Actions.edit-word(i + SeedState.right-offset);
-                    Navigate.backward();
-                }
             }
         }
     }
@@ -64,7 +48,7 @@ export component ReviewPagePage inherits PageBody {
         vertical-stretch: 1;
     }
 
-    if (SeedState.review-page-count > 1): HorizontalLayout {
+    if (SeedState.view-page-count > 1): HorizontalLayout {
         height: 44px;
         spacing: Theme.spacing-sm;
 
@@ -73,9 +57,9 @@ export component ReviewPagePage inherits PageBody {
             variant: ButtonVariant.secondary;
             size: ControlSize.sm;
             horizontal-stretch: 1;
-            disabled: SeedState.review-page == 0;
+            disabled: SeedState.view-page == 0;
             clicked => {
-                Actions.review-prev-page();
+                Actions.view-prev-page();
             }
         }
 
@@ -84,9 +68,9 @@ export component ReviewPagePage inherits PageBody {
             variant: ButtonVariant.secondary;
             size: ControlSize.sm;
             horizontal-stretch: 1;
-            disabled: SeedState.review-page + 1 >= SeedState.review-page-count;
+            disabled: SeedState.view-page + 1 >= SeedState.view-page-count;
             clicked => {
-                Actions.review-next-page();
+                Actions.view-next-page();
             }
         }
     }
@@ -102,12 +86,12 @@ export component ReviewPagePage inherits PageBody {
 
     Button {
         width: 100%;
-        text: "Continue";
+        text: SeedState.view-cta;
         size: ControlSize.md;
         full-width: true;
         clicked => {
-            if (Actions.commit-words()) {
-                root.go-onward();
+            if (Actions.transcribe-view()) {
+                Navigate.format-page({ });
             }
         }
     }

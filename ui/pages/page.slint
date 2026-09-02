@@ -10,18 +10,25 @@ import { PageBody, TitleText, Subtext } from "../components.slint";
 
 export component MainPagePage inherits PageBody {
     TitleText {
-        text: "SeedQR Tool";
+        text: "Seed XOR";
     }
 
     Subtext {
-        text: "Copy a SeedQR by hand, then check your copy is right.";
+        text: "Split one seed into parts that are seeds themselves, and put them back together.";
     }
 
     Card {
         width: 100%;
         size: ControlSize.lg;
+        title: "Every part is needed";
+        body: "There is no threshold here. All the parts rebuild the seed; any smaller number of them rebuilds a different seed, with no warning that it is the wrong one.";
+    }
+
+    Card {
+        width: 100%;
+        size: ControlSize.md;
         title: "Nothing is saved";
-        body: "Your seed is held in memory only while this app is open. It is never written to this device, and this app cannot read seeds stored in Seed Vault.";
+        body: "Seeds and parts are held in memory only while this app is open. They are never written to this device, and this app cannot read seeds stored in Seed Vault.";
     }
 
     Rectangle {
@@ -30,25 +37,24 @@ export component MainPagePage inherits PageBody {
 
     Button {
         width: 100%;
-        text: "Scan SeedQR";
+        text: "Split a Seed";
         size: ControlSize.md;
         full-width: true;
         clicked => {
-            if (Actions.scan-seed()) {
-                Navigate.format-page({ });
-            }
+            Actions.start-split();
+            Navigate.load-page({ });
         }
     }
 
     Button {
         width: 100%;
-        text: "Enter Seed Words";
+        text: "Combine Parts";
         variant: ButtonVariant.secondary;
         size: ControlSize.md;
         full-width: true;
         clicked => {
-            Actions.reset();
-            Navigate.entry-page({ });
+            Actions.start-combine();
+            Navigate.count-page({ });
         }
     }
 

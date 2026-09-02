@@ -20,15 +20,30 @@ export component EntryPagePage inherits PageBody {
     }
 
     NavHeader {
-        title: "Enter Seed Words";
+        title: SeedState.load-title;
         back => {
             field.dismiss();
-            Actions.reset();
+            // Throws away what was typed here and nothing else: a half-entered
+            // part must not take the parts already collected with it.
+            Actions.cancel-entry();
             Navigate.backward();
         }
     }
 
-    HorizontalLayout {
+    // Every part of a set is the same length, so once the first one is in the
+    // choice is made and the buttons go away rather than sitting there refusing.
+    if (SeedState.word-count-locked): Text {
+        height: 44px;
+        text: "Part 1 has " + SeedState.word-count + " words, so this one does too.";
+        color: Theme.palette-muted;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        wrap: word-wrap;
+    }
+
+    if (!SeedState.word-count-locked): HorizontalLayout {
         height: 44px;
         spacing: Theme.spacing-sm;
 

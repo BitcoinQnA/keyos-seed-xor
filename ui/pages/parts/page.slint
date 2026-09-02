@@ -1,0 +1,84 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme, UISize, ControlSize, ButtonVariant } from "@ui/theme.slint";
+import { Button } from "@ui/button.slint";
+import { Card } from "@ui/card.slint";
+import { Navigate } from "../../gen/navigate.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
+import { PageBody, NavHeader, WordPill, Subtext } from "../../components.slint";
+
+export component PartsPagePage inherits PageBody {
+
+    NavHeader {
+        title: "Your Parts";
+        // Home rather than back: the previous page would offer to split again
+        // and generate a second, unrelated set.
+        back => {
+            Actions.reset();
+            Navigate.return-home();
+        }
+    }
+
+    Subtext {
+        text: SeedState.parts-summary;
+    }
+
+    VerticalLayout {
+        spacing: Theme.spacing-md;
+
+        for label[i] in SeedState.part-labels: WordPill {
+            number: i + 1;
+            word: label;
+            clicked => {
+                Actions.view-part(i);
+                Navigate.words-page({ });
+            }
+        }
+    }
+
+    Rectangle {
+        vertical-stretch: 1;
+    }
+
+    // The spec suggests keeping the original's checksum word with the parts, so
+    // you can tell a correct set from an incorrect one. It is a real trade, so
+    // it is offered with the cost attached rather than done quietly.
+    if (!SeedState.show-checksum): Button {
+        width: 100%;
+        text: "Show Checksum Word";
+        variant: ButtonVariant.ghost;
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            Actions.toggle-checksum();
+        }
+    }
+
+    if (SeedState.show-checksum): Card {
+        width: 100%;
+        size: ControlSize.md;
+        title: "Checksum word: " + SeedState.checksum-word;
+        body: "The last word of the original seed. Stored with the parts, it confirms you have reassembled the right set. It also gives away three bits of the real seed, and it tells anyone holding a correct set that they hold one.";
+    }
+
+    if (SeedState.entry-error != ""): Text {
+        text: SeedState.entry-error;
+        color: Theme.palette-danger;
+        font-family: Theme.font-primary;
+        font-size: Fonts.xs;
+        horizontal-alignment: center;
+        wrap: word-wrap;
+    }
+
+    Button {
+        width: 100%;
+        text: "Done";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            Actions.reset();
+            Navigate.return-home();
+        }
+    }
+}

@@ -10,6 +10,6 @@ edition = "2021"
 
 [dependencies]
 qrcode = { version = "0.12", default-features = false }
-bip39 = "2.2"
+bip39 = { version = "2.2", features = ["zeroize"] }
 sha2 = "0.10"
 zeroize = { version = "1.8", features = ["zeroize_derive"] }
