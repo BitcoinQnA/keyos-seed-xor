@@ -11,12 +11,12 @@ theme = "resources/theme.json"
 app-id = "0x5f7d9917e6bac9600576d88614384dda"
 version = "0.1.1"
 min-keyos-version = "1.0.0"
-signing-identity = "passport-prime-dev"
+signing-identity = "qna-dev"
 
 [publisher]
-name = "Foundation Devices, Inc."
-contact-email = "hello@foundation.xyz"
-support-url = "https://foundation.xyz"
+name = "QnA"
+contact-email = "qna@foundation.xyz"
+support-url = "https://github.com/BitcoinQnA/keyos-seed-xor"
 
 [permissions]
 template = ["gui-app"]

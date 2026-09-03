@@ -135,10 +135,11 @@ Everything runs inside the SDK Nix shell:
 cd ~/Documents/AI/keyos-seed-xor && nix develop ~/.foundation/sdk/foundation-sdk-1.0.0-aarch64-apple-darwin --command foundation pack --release
 ```
 
-Signed with the `passport-prime-dev` identity. Publisher fingerprint:
+Signed with the `qna-dev` identity, a self-signed development key, not a
+production Foundation signing certificate. Publisher fingerprint:
 
 ```text
-19be3035a84826e7732fc07f56c62175ef3a0f4a86fb63a80cf73f93c4f56cfb
+1fc590a13d547db696e0d3cd12d07a4d7b119e957b301aedd1299b10a1852971
 ```
 
 Outputs land in `target/keyos/`:
