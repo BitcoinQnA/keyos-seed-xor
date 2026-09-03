@@ -1,10 +1,15 @@
 <svg width="110" height="110" viewBox="0 0 110 110" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Seed XOR glyph: the XOR operator. No background: the KeyOS launcher
-       supplies the badge plate, so anything full-canvas here renders as a slab
-       over the round tile. 64px overall (~58% of the canvas). -->
-  <circle cx="55" cy="55" r="29.25" stroke="#ffffff" stroke-width="5.5" fill="none"/>
-  <g stroke="#d4a394" stroke-width="5.5" stroke-linecap="round">
-    <line x1="25.75" y1="55" x2="84.25" y2="55"/>
-    <line x1="55" y1="25.75" x2="55" y2="84.25"/>
+  <g stroke-width="5" stroke-linecap="round">
+    <path d="M55 32v8" stroke="#00FF68"/>
+    <path d="m40 69-6 7" stroke="#38BDF8"/>
+    <path d="m70 69 6 7" stroke="#FF9F5A"/>
   </g>
+  <rect x="45" y="10" width="20" height="22" rx="5" fill="#00FF68"/>
+  <path d="M50 17h10M50 23h10" stroke="#12382A" stroke-width="3" stroke-linecap="round"/>
+  <rect x="19" y="72" width="24" height="20" rx="5" fill="#38BDF8"/>
+  <path d="M25 79h12M25 85h12" stroke="#17344A" stroke-width="3" stroke-linecap="round"/>
+  <rect x="67" y="72" width="24" height="20" rx="5" fill="#FF9F5A"/>
+  <path d="M73 79h12M73 85h12" stroke="#4A2A1E" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="55" cy="55" r="16" stroke="#F7F4EE" stroke-width="5"/>
+  <path d="m49 49 12 12m0-12L49 61" stroke="#F7F4EE" stroke-width="5" stroke-linecap="round"/>
 </svg>

@@ -5,14 +5,13 @@ import { Theme, ControlSize } from "@ui/theme.slint";
 import { Button } from "@ui/button.slint";
 import { Card } from "@ui/card.slint";
 import { Navigate } from "../../gen/navigate.slint";
-import { SeedState } from "../../globals.slint";
+import { SeedState, Actions, Fonts } from "../../globals.slint";
 import { PageBody, NavHeader, Subtext } from "../../components.slint";
 
-export component WarnPagePage inherits PageBody {
-
+export component WarnConfirmPagePage inherits PageBody {
     NavHeader {
         // TODO: localize
-        title: "Before You Split";
+        title: "Protect Your Parts";
         back => {
             Navigate.backward();
         }
@@ -20,7 +19,7 @@ export component WarnPagePage inherits PageBody {
 
     Subtext {
         // TODO: localize
-        text: "1 of 2: Understand the risks";
+        text: "2 of 2: Plan your backups";
     }
 
     Flickable {
@@ -37,18 +36,27 @@ export component WarnPagePage inherits PageBody {
                 width: 100%;
                 size: ControlSize.md;
                 // TODO: localize
-                title: "Every part is required";
+                title: "Each part is a seed";
                 // TODO: localize
-                body: "You need all " + SeedState.part-count + " parts to recover the original seed. There is no threshold or spare. A lost part means you cannot recover from this set.";
+                body: "Each part is a valid seed for a separate wallet. A single part cannot recover your original wallet.";
             }
 
             Card {
                 width: 100%;
                 size: ControlSize.md;
                 // TODO: localize
-                title: "No missing-part error";
+                title: "Keep every part safe";
                 // TODO: localize
-                body: "Combining fewer parts produces a different valid seed. There may be no error to tell you it is the wrong wallet.";
+                body: "Store the parts separately. Check every backup before relying on it.";
+            }
+
+            if (SeedState.entry-error != ""): Text {
+                text: SeedState.entry-error;
+                color: Theme.palette-danger;
+                font-family: Theme.font-primary;
+                font-size: Fonts.xs;
+                horizontal-alignment: center;
+                wrap: word-wrap;
             }
         }
     }
@@ -57,11 +65,13 @@ export component WarnPagePage inherits PageBody {
         width: 100%;
         height: Theme.control-size-md;
         // TODO: localize
-        text: "Continue";
+        text: "Split Seed";
         size: ControlSize.md;
         full-width: true;
         clicked => {
-            Navigate.warn-confirm-page({ });
+            if (Actions.do-split()) {
+                Navigate.parts-page({ });
+            }
         }
     }
 }

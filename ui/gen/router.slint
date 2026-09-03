@@ -12,6 +12,7 @@ import { ReviewPagePage } from "../pages/review/page.slint";
 import { TranscribePagePage } from "../pages/transcribe/page.slint";
 import { VerifyPagePage } from "../pages/verify/page.slint";
 import { WarnPagePage } from "../pages/warn/page.slint";
+import { WarnConfirmPagePage } from "../pages/warn-confirm/page.slint";
 import { WordsPagePage } from "../pages/words/page.slint";
 import { RouteState, RouteOption } from "internal.slint";
 
@@ -40,6 +41,8 @@ export component Router inherits Rectangle {
     if (RouteState.active == RouteOption.VerifyPage): VerifyPagePage {
     }
     if (RouteState.active == RouteOption.WarnPage): WarnPagePage {
+    }
+    if (RouteState.active == RouteOption.WarnConfirmPage): WarnConfirmPagePage {
     }
     if (RouteState.active == RouteOption.WordsPage): WordsPagePage {
     }

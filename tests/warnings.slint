@@ -1,0 +1,44 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme } from "@ui/theme.slint";
+import { SeedState } from "../ui/globals.slint";
+import { WarnPagePage } from "../ui/pages/warn/page.slint";
+import { WarnConfirmPagePage } from "../ui/pages/warn-confirm/page.slint";
+import { CountPagePage } from "../ui/pages/count/page.slint";
+import "../.foundation-sdk/current/resources/fonts/Montserrat-Regular.ttf";
+import "../.foundation-sdk/current/resources/fonts/Montserrat-Medium.ttf";
+
+export component WarningPreview inherits Window {
+    width: 480px;
+    height: root.window-height * 1px;
+    in property <int> window-height: 760;
+    in property <bool> confirmation: false;
+    in property <bool> counting: false;
+    in property <bool> splitting: false;
+    in property <bool> dark: false;
+    in property <int> parts: 2;
+    in property <string> error;
+
+    function apply-state() {
+        SeedState.part-count = root.parts;
+        SeedState.splitting = root.splitting;
+        SeedState.entry-error = root.error;
+        Theme.is-dark = root.dark;
+        Theme.palette-background = root.dark ? #231f20 : #ffffff;
+        Theme.palette-surface = root.dark ? #231f20 : #ffffff;
+        Theme.palette-foreground = root.dark ? #ffffff : #231f20;
+        Theme.palette-muted = root.dark ? #b7b6b7 : #959394;
+        Theme.palette-border = root.dark ? #5a595a : #d5d4d5;
+    }
+
+    init => { root.apply-state(); }
+    changed dark => { root.apply-state(); }
+    changed parts => { root.apply-state(); }
+    changed splitting => { root.apply-state(); }
+    changed error => { root.apply-state(); }
+
+    if root.counting: CountPagePage { }
+    if !root.counting && !root.confirmation: WarnPagePage { }
+    if !root.counting && root.confirmation: WarnConfirmPagePage { }
+}

@@ -75,6 +75,9 @@ export global Navigate {
     // /warn
     callback warn-page(NavigateOptions);
     
+    // /warn-confirm
+    callback warn-confirm-page(NavigateOptions);
+    
     // /words
     callback words-page(NavigateOptions);
 }
@@ -92,6 +95,7 @@ export global RoutePath {
     out property <string> transcribe-page : "/transcribe";
     out property <string> verify-page : "/verify";
     out property <string> warn-page : "/warn";
+    out property <string> warn-confirm-page : "/warn-confirm";
     out property <string> words-page : "/words";
 }
 

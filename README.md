@@ -118,6 +118,19 @@ scan or by typing.
 
 ## Build
 
+For Beta 3 installation, validate the packed archive before copying it:
+
+```bash
+foundation pack --release --out target/keyos/seed-xor-sdk.app
+python3 scripts/pack-beta3.py target/keyos/seed-xor-sdk.app target/keyos/seed-xor-install.app
+```
+
+The older SDK CLI can omit `minKeyosVersion` despite `min-keyos-version` being
+configured. Beta 3 rejects that archive as invalid. The check restores the
+configured minimum when needed and re-signs only the manifest with the existing
+publisher identity. It verifies both signatures, the app identity/version and
+all file hashes; the application binary is unchanged. Use a fresh output path.
+
 Everything runs inside the SDK Nix shell:
 
 ```bash
@@ -168,7 +181,8 @@ it is in.
 ```
 /                welcome
 /count           two, three or four parts
-/warn            the N of N warning, split only
+/warn            all-parts and wrong-wallet warnings, split only
+/warn-confirm    backup precautions and split confirmation
 /load            scan a SeedQR or type words: the source, or one part
   /entry           word entry with BIP39 autocomplete
   /review          check the words before committing
@@ -186,6 +200,18 @@ it is in.
 ```bash
 cargo test -p seed-core
 ```
+
+After an SDK build/check has generated the router and theme files, render both
+split warning screens with the bundled viewer:
+
+```bash
+bash tests/check-warning-ui.sh
+```
+
+The previews in `target/warning-previews/` cover two, three and four parts,
+the split/combine count picker, light/dark colours, both 480x800 and 480x760
+windows, and split errors. They use the real pages and SDK fonts without
+loading a seed or calling the RNG.
 
 23 tests. The ones that matter:
 

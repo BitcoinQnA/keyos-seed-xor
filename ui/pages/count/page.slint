@@ -60,35 +60,45 @@ export component CountPagePage inherits PageBody {
         }
     }
 
-    if (SeedState.splitting): Card {
-        width: 100%;
-        size: ControlSize.md;
-        title: "More parts is not more safety";
-        body: "Every extra part is another thing that has to survive and another place the seed can be lost. Two parts in two places is a real improvement. Four is only better if you genuinely have four safe places.";
-    }
-
-    if (!SeedState.splitting): Card {
-        width: 100%;
-        size: ControlSize.md;
-        title: "Combining seeds you already hold";
-        body: "This screen also makes a new wallet. Combine seeds you already have and you get a fresh seed derived from all of them, with nothing about the originals changed.";
-    }
-
-    Rectangle {
+    Flickable {
         vertical-stretch: 1;
-    }
+        viewport-width: self.width;
+        viewport-height: max(self.height, content.preferred-height);
 
-    if (SeedState.entry-error != ""): Text {
-        text: SeedState.entry-error;
-        color: Theme.palette-danger;
-        font-family: Theme.font-primary;
-        font-size: Fonts.xs;
-        horizontal-alignment: center;
-        wrap: word-wrap;
+        content := VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            spacing: Theme.spacing-md;
+
+            if (SeedState.splitting): Card {
+                width: 100%;
+                size: ControlSize.md;
+                title: "More parts is not more safety";
+                body: "Every extra part is another thing that has to survive and another place the seed can be lost. Two parts in two places is a real improvement. Four is only better if you genuinely have four safe places.";
+            }
+
+            if (!SeedState.splitting): Card {
+                width: 100%;
+                size: ControlSize.md;
+                // TODO: localize
+                title: "Combine existing seeds";
+                body: "This screen also makes a new wallet. Combine seeds you already have and you get a fresh seed derived from all of them, with nothing about the originals changed.";
+            }
+
+            if (SeedState.entry-error != ""): Text {
+                text: SeedState.entry-error;
+                color: Theme.palette-danger;
+                font-family: Theme.font-primary;
+                font-size: Fonts.xs;
+                horizontal-alignment: center;
+                wrap: word-wrap;
+            }
+        }
     }
 
     Button {
         width: 100%;
+        height: Theme.control-size-md;
         text: "Continue";
         size: ControlSize.md;
         full-width: true;

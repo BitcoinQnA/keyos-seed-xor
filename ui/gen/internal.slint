@@ -12,6 +12,7 @@ import { ReviewPageProps } from "../pages/review/props.slint";
 import { TranscribePageProps } from "../pages/transcribe/props.slint";
 import { VerifyPageProps } from "../pages/verify/props.slint";
 import { WarnPageProps } from "../pages/warn/props.slint";
+import { WarnConfirmPageProps } from "../pages/warn-confirm/props.slint";
 import { WordsPageProps } from "../pages/words/props.slint";
 
 // INTERNAL ROUTER COMPONENT. DO NOT USE.
@@ -28,6 +29,7 @@ export enum RouteOption {
     TranscribePage,
     VerifyPage,
     WarnPage,
+    WarnConfirmPage,
     WordsPage,
 }
 // INTERNAL ROUTER COMPONENT. DO NOT USE.
@@ -45,5 +47,6 @@ export global RouteState {
     in-out property <TranscribePageProps> transcribe-page-props;
     in-out property <VerifyPageProps> verify-page-props;
     in-out property <WarnPageProps> warn-page-props;
+    in-out property <WarnConfirmPageProps> warn-confirm-page-props;
     in-out property <WordsPageProps> words-page-props;
 }
