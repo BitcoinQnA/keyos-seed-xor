@@ -17,14 +17,17 @@ use slint_keyos_platform::{
     navigation::open_qr_scanner,
     slint::{ComponentHandle, ModelRc, SharedString, VecModel},
 };
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 use seed_core::{
     seedqr::BLOCK,
     xor::{self, XorError},
 };
 
-use crate::{gui_permissions::GuiPermissions, security_permissions::SecurityPermissions, seedqr, Actions, AppWindow, SeedState};
+use crate::{
+    entropy::draw_entropy, gui_permissions::GuiPermissions, seed_input, seedqr, Actions, AppWindow,
+    SeedState,
+};
 
 const MAX_SUGGESTIONS: usize = 3;
 /// Two columns of six, like the firmware seed word view.
@@ -232,7 +235,7 @@ pub fn init(ui: &AppWindow) {
             let mut parts = None;
             let mut last_error = String::new();
             for _ in 0..SPLIT_ATTEMPTS {
-                let mut entropy = Vec::with_capacity(count - 1);
+                let mut entropy = Zeroizing::new(Vec::with_capacity(count - 1));
                 for _ in 0..count - 1 {
                     match draw_entropy(len) {
                         Ok(bytes) => entropy.push(bytes),
@@ -242,18 +245,15 @@ pub fn init(ui: &AppWindow) {
 
                 match xor::split(&source, count, &entropy) {
                     Ok(made) => {
-                        entropy.zeroize();
                         parts = Some(made);
                         break;
                     }
                     // The only retryable case. Everything else is a real bug and
                     // retrying would just hide it.
                     Err(XorError::DuplicateParts) => {
-                        entropy.zeroize();
                         last_error = XorError::DuplicateParts.to_string();
                     }
                     Err(e) => {
-                        entropy.zeroize();
                         return fail(&ui, &e.to_string());
                     }
                 }
@@ -292,7 +292,7 @@ pub fn init(ui: &AppWindow) {
             let Some(ui) = ui.upgrade() else { return false };
             let Some(data) = scan("Scan a SeedQR") else { return false };
 
-            match parse_seedqr(&data) {
+            match seed_input::parse_seedqr(&data) {
                 Ok(mnemonic) => match take_loaded(&ui, &state, mnemonic) {
                     Ok(()) => true,
                     Err(message) => fail(&ui, &message),
@@ -548,14 +548,11 @@ pub fn init(ui: &AppWindow) {
                 (mnemonic, current.view_label.clone())
             };
 
-            // security::Seed::from_bytes panics on anything but 16 or 32 bytes,
-            // so an 18 word value must never reach it. Nothing in the app can
-            // produce one, and this is the last place to be sure.
-            if !matches!(mnemonic.word_count(), 12 | 24) {
-                return fail(&ui, "Only 12 and 24 word seeds can be made into a SeedQR.");
-            }
-
-            state.borrow_mut().seed = Some(security::Seed::from_mnemonic(&mnemonic));
+            let seed = match seed_input::to_sdk_seed(&mnemonic) {
+                Ok(seed) => seed,
+                Err(message) => return fail(&ui, &message),
+            };
+            state.borrow_mut().seed = Some(seed);
             push_seed(&ui, &state.borrow(), &label);
             clear_messages(&ui);
             true
@@ -645,9 +642,10 @@ pub fn init(ui: &AppWindow) {
             let Some(data) = scan("Scan your copy") else { return false };
 
             let seed_state = ui.global::<SeedState>();
-            match parse_seedqr(&data) {
+            match seed_input::parse_seedqr(&data)
+                .and_then(|scanned| seed_input::to_sdk_seed(&scanned))
+            {
                 Ok(scanned) => {
-                    let scanned = security::Seed::from_mnemonic(&scanned);
                     let matches = state
                         .borrow()
                         .seed
@@ -669,12 +667,11 @@ pub fn init(ui: &AppWindow) {
                         );
                     }
                 }
-                Err(_) => {
+                Err(message) => {
                     seed_state.set_verify_ok(false);
-                    seed_state.set_verify_title("That is not a SeedQR".into());
-                    seed_state.set_verify_detail(
-                        "It scanned, but not as a SeedQR. A misread square usually does this. Check your copy against the grid.".into(),
-                    );
+                    // TODO: localize
+                    seed_state.set_verify_title("Cannot verify this code".into());
+                    seed_state.set_verify_detail(message.into());
                 }
             }
             true
@@ -730,17 +727,12 @@ pub fn init(ui: &AppWindow) {
 /// flow takes them one at a time and folds them together once the last one is
 /// in.
 fn take_loaded(ui: &AppWindow, state: &Rc<RefCell<AppState>>, mnemonic: Mnemonic) -> Result<(), String> {
+    seed_input::ensure_supported(&mnemonic)?;
     let seed_state = ui.global::<SeedState>();
     let mode = state.borrow().mode;
 
     match mode {
         Mode::Split => {
-            if !matches!(mnemonic.word_count(), 12 | 24) {
-                return Err(format!(
-                    "That is a {} word seed. This app splits 12 and 24 word seeds.",
-                    mnemonic.word_count()
-                ));
-            }
             state.borrow_mut().source = Some(mnemonic);
             clear_messages(ui);
             seed_state.set_after_load(after_load::CHOOSE_COUNT);
@@ -758,7 +750,7 @@ fn take_loaded(ui: &AppWindow, state: &Rc<RefCell<AppState>>, mnemonic: Mnemonic
                         ));
                     }
                 }
-                if current.collected.iter().any(|p| p.to_entropy() == mnemonic.to_entropy()) {
+                if current.collected.contains(&mnemonic) {
                     return Err(
                         "That is a part you have already entered. Each part is used once: entering one twice cancels it out and gives a different seed."
                             .to_string(),
@@ -801,22 +793,6 @@ fn take_loaded(ui: &AppWindow, state: &Rc<RefCell<AppState>>, mnemonic: Mnemonic
     }
 }
 
-/// Draw `len` bytes for one part: TRNG, then double SHA-256, as the spec's
-/// random mode describes.
-///
-/// `GetRandom` sits in the `device-secrets.general-status` permission group and
-/// is auto-allowed, so it is grantable to a third-party-signed app. It cannot
-/// read seeds; `GetSeed` is Foundation-only and is not in this app's manifest.
-fn draw_entropy(len: usize) -> Result<Vec<u8>, String> {
-    let security = security::Security::<SecurityPermissions>::default();
-    let mut raw = security
-        .get_random()
-        .map_err(|_| "The device would not give out random bytes, so no part can be generated.".to_string())?;
-    let conditioned = xor::condition_random(&raw, len);
-    raw.zeroize();
-    Ok(conditioned)
-}
-
 /// Show a message on the current page and keep it there.
 fn fail(ui: &AppWindow, message: &str) -> bool {
     ui.global::<SeedState>().set_entry_error(message.into());
@@ -842,18 +818,6 @@ fn scan(title: &str) -> Option<Vec<u8>> {
     match result {
         ScanQrResult::Qr { data, .. } => Some(data),
         _ => None,
-    }
-}
-
-/// Parse a scan as a SeedQR. Only 12 and 24 word seeds have a SeedQR form, so
-/// anything else is rejected here instead of panicking further in.
-fn parse_seedqr(data: &[u8]) -> Result<Mnemonic, String> {
-    let mnemonic = security::parse_seedqr(data)
-        .map_err(|_| "That is not a SeedQR. Scan a Standard or Compact SeedQR.".to_string())?;
-
-    match mnemonic.word_count() {
-        12 | 24 => Ok(mnemonic),
-        other => Err(format!("That is a {other} word seed. SeedQR only covers 12 and 24 word seeds.")),
     }
 }
 

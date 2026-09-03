@@ -17,6 +17,16 @@ HEADER_SIZE = 2048
 MAX_SIZE = 64 * 1024 * 1024
 
 
+def read_config(root):
+    config = tomllib.loads((root / "app-config.toml").read_text())
+    cargo = tomllib.loads((root / "Cargo.toml").read_text())
+    version = cargo["package"]["version"]
+    if "version" in config and config["version"] != version:
+        raise ValueError("App config version differs from Cargo.toml")
+    config["version"] = version
+    return config
+
+
 def signed_payload(data):
     if len(data) <= HEADER_SIZE or data[:4] != b"PRM1":
         raise ValueError("Missing KeyOS signature header")
@@ -71,7 +81,7 @@ def main():
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
-    config = tomllib.loads((root / "app-config.toml").read_text())
+    config = read_config(root)
     identity = config["signing-identity"]
     if not re.fullmatch(r"[A-Za-z0-9_-]+", identity):
         raise ValueError("Invalid signing identity")

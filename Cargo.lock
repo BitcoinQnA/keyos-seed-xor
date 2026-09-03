@@ -3173,10 +3173,11 @@ version = "0.1.0"
 
 [[package]]
 name = "keyos-seed-xor"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "bip39",
  "foundation-themes",
+ "getrandom 0.2.10",
  "log",
  "security",
  "seed-core",

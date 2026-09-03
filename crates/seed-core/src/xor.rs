@@ -37,7 +37,7 @@
 
 use bip39::{Language, Mnemonic};
 use sha2::{Digest, Sha256};
-use zeroize::Zeroize;
+use zeroize::{Zeroize, Zeroizing};
 
 /// Fewest parts a seed can be split into. One part is not a split.
 pub const MIN_PARTS: usize = 2;
@@ -107,10 +107,8 @@ pub fn combine(parts: &[Mnemonic]) -> Result<Mnemonic, XorError> {
         return Err(XorError::LengthMismatch);
     }
 
-    let mut entropies: Vec<Vec<u8>> = parts.iter().map(|p| p.to_entropy()).collect();
-    let result = fold(&entropies);
-    entropies.zeroize();
-    result
+    let entropies = Zeroizing::new(parts.iter().map(|p| p.to_entropy()).collect::<Vec<_>>());
+    fold(&entropies)
 }
 
 /// Split `seed` into `count` parts, using caller-supplied entropy for the first
@@ -145,7 +143,7 @@ pub fn split(seed: &Mnemonic, count: usize, entropy: &[Vec<u8>]) -> Result<Vec<M
 
     // The last part is the seed with every other part XOR-ed out of it, so the
     // whole set folds back to the seed.
-    let mut last = seed.to_entropy();
+    let mut last = Zeroizing::new(seed.to_entropy());
     for piece in entropy {
         for (acc, byte) in last.iter_mut().zip(piece) {
             *acc ^= byte;
@@ -153,17 +151,16 @@ pub fn split(seed: &Mnemonic, count: usize, entropy: &[Vec<u8>]) -> Result<Vec<M
     }
 
     let mut parts = Vec::with_capacity(count);
-    for piece in entropy.iter().chain(core::iter::once(&last)) {
+    for piece in entropy.iter().chain(core::iter::once(&*last)) {
         parts.push(
             Mnemonic::from_entropy_in(Language::English, piece)
                 .map_err(|e| XorError::Bip39(e.to_string()))?,
         );
     }
-    last.zeroize();
 
     // Vanishingly unlikely with real randomness, but a duplicate part would make
     // the set uncombinable, so it is caught here rather than at reassembly.
-    if has_duplicate(&parts.iter().map(|p| p.to_entropy()).collect::<Vec<_>>()) {
+    if has_duplicate(&parts) {
         return Err(XorError::DuplicateParts);
     }
 
@@ -178,9 +175,12 @@ pub fn split(seed: &Mnemonic, count: usize, entropy: &[Vec<u8>]) -> Result<Vec<M
 /// its exact byte serialisation is not pinned down by the Coldcard document, and
 /// guessing it produces parts a real Coldcard will not reproduce.
 pub fn condition_random(raw: &[u8], len: usize) -> Vec<u8> {
-    let once = Sha256::digest(raw);
-    let twice = Sha256::digest(once);
-    twice[..len.min(twice.len())].to_vec()
+    let mut once = Sha256::digest(raw);
+    let mut twice = Sha256::digest(&once);
+    once.as_mut_slice().zeroize();
+    let conditioned = twice[..len.min(twice.len())].to_vec();
+    twice.as_mut_slice().zeroize();
+    conditioned
 }
 
 /// The last word of a mnemonic.
@@ -198,21 +198,19 @@ fn fold(entropies: &[Vec<u8>]) -> Result<Mnemonic, XorError> {
         return Err(XorError::DuplicateParts);
     }
 
-    let mut acc = vec![0u8; entropies[0].len()];
+    let mut acc = Zeroizing::new(vec![0u8; entropies[0].len()]);
     for piece in entropies {
         for (out, byte) in acc.iter_mut().zip(piece) {
             *out ^= byte;
         }
     }
 
-    let result = Mnemonic::from_entropy_in(Language::English, &acc)
-        .map_err(|e| XorError::Bip39(e.to_string()));
-    acc.zeroize();
-    result
+    Mnemonic::from_entropy_in(Language::English, &acc)
+        .map_err(|e| XorError::Bip39(e.to_string()))
 }
 
-fn has_duplicate(entropies: &[Vec<u8>]) -> bool {
-    entropies.iter().enumerate().any(|(i, a)| entropies[i + 1..].iter().any(|b| a == b))
+fn has_duplicate<T: PartialEq>(parts: &[T]) -> bool {
+    parts.iter().enumerate().any(|(i, a)| parts[i + 1..].iter().any(|b| a == b))
 }
 
 #[cfg(test)]
@@ -379,6 +377,21 @@ mod tests {
             combine(&[a.clone(), m(V24_B), a]).unwrap_err(),
             XorError::DuplicateParts
         );
+    }
+
+    #[test]
+    fn split_rejects_duplicate_random_or_derived_parts() {
+        for len in [16, 24, 32] {
+            let seed = Mnemonic::from_entropy(&fixture("source", len)).unwrap();
+            let part = fixture("part", len);
+            assert_eq!(
+                split(&seed, 3, &[part.clone(), part.clone()]).unwrap_err(),
+                XorError::DuplicateParts
+            );
+
+            let zero = Mnemonic::from_entropy(&vec![0; len]).unwrap();
+            assert_eq!(split(&zero, 2, &[part]).unwrap_err(), XorError::DuplicateParts);
+        }
     }
 
     /// What that refusal is protecting against, stated as a fact rather than a

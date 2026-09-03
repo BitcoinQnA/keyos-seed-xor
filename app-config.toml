@@ -9,8 +9,7 @@ description = "Split a seed into parts that XOR back together"
 icon = "resources/icon.svg"
 theme = "resources/theme.json"
 app-id = "0x5f7d9917e6bac9600576d88614384dda"
-version = "0.1.1"
-min-keyos-version = "1.0.0"
+min-keyos-version = "1.4.0-beta3"
 signing-identity = "qna-dev"
 
 [publisher]
@@ -20,9 +19,3 @@ support-url = "https://github.com/BitcoinQnA/keyos-seed-xor"
 
 [permissions]
 template = ["gui-app"]
-
-# Random bytes for the generated parts, and nothing else. GetRandom sits in the
-# `device-secrets.general-status` group and is auto-allowed, so a third-party
-# signed app can hold it. It cannot read the master seed: that is GetSeed, which
-# is Foundation-only and deliberately absent.
-"os/security" = ["GetRandom"]

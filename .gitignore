@@ -2,3 +2,4 @@ target/
 .foundation-sdk/
 ui/ui
 manifest.toml
+__pycache__/
