@@ -176,7 +176,7 @@ pub fn split(seed: &Mnemonic, count: usize, entropy: &[Vec<u8>]) -> Result<Vec<M
 /// guessing it produces parts a real Coldcard will not reproduce.
 pub fn condition_random(raw: &[u8], len: usize) -> Vec<u8> {
     let mut once = Sha256::digest(raw);
-    let mut twice = Sha256::digest(&once);
+    let mut twice = Sha256::digest(once);
     once.as_mut_slice().zeroize();
     let conditioned = twice[..len.min(twice.len())].to_vec();
     twice.as_mut_slice().zeroize();
@@ -186,8 +186,8 @@ pub fn condition_random(raw: &[u8], len: usize) -> Vec<u8> {
 /// The last word of a mnemonic.
 ///
 /// The spec suggests recording the original's checksum word alongside the parts,
-/// so you can tell you have reassembled the right set. It gives away three bits
-/// of the real seed, and it tells a holder of a correct subset that they have
+/// so you can tell you have reassembled the right set. It reveals information
+/// about the real seed, and it tells a holder of a correct subset that they have
 /// one, so it is offered rather than done silently.
 pub fn checksum_word(seed: &Mnemonic) -> String {
     seed.words().last().unwrap_or_default().to_string()
@@ -406,10 +406,10 @@ mod tests {
     #[test]
     fn part_counts_outside_two_to_four_are_rejected() {
         let a = m(V24_A);
-        assert_eq!(combine(&[a.clone()]).unwrap_err(), XorError::PartCount(1));
+        assert_eq!(combine(std::slice::from_ref(&a)).unwrap_err(), XorError::PartCount(1));
         assert_eq!(combine(&[]).unwrap_err(), XorError::PartCount(0));
 
-        let five: Vec<Mnemonic> = std::iter::repeat(a.clone()).take(5).collect();
+        let five: Vec<Mnemonic> = std::iter::repeat_n(a.clone(), 5).collect();
         assert_eq!(combine(&five).unwrap_err(), XorError::PartCount(5));
 
         let entropy = vec![fixture("x", 32)];

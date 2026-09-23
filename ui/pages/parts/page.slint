@@ -9,57 +9,70 @@ import { SeedState, Actions, Fonts } from "../../globals.slint";
 import { PageBody, NavHeader, WordPill, Subtext } from "../../components.slint";
 
 export component PartsPagePage inherits PageBody {
+    in-out property <bool> confirming-finish: false;
 
     NavHeader {
         title: "Your Parts";
-        // Home rather than back: the previous page would offer to split again
-        // and generate a second, unrelated set.
         back => {
-            Actions.reset();
-            Navigate.return-home();
+            root.confirming-finish = !root.confirming-finish;
         }
     }
 
-    Subtext {
-        text: SeedState.parts-summary;
-    }
+    Flickable {
+        vertical-stretch: 1;
+        viewport-width: self.width;
+        viewport-height: max(self.height, content.preferred-height);
 
-    VerticalLayout {
-        spacing: Theme.spacing-md;
+        content := VerticalLayout {
+            width: parent.width;
+            alignment: start;
+            spacing: Theme.spacing-md;
 
-        for label[i] in SeedState.part-labels: WordPill {
-            number: i + 1;
-            word: label;
-            clicked => {
-                Actions.view-part(i);
-                Navigate.words-page({ });
+            if (!root.confirming-finish): Subtext {
+                text: SeedState.parts-summary;
+            }
+
+            if (!root.confirming-finish): VerticalLayout {
+                spacing: Theme.spacing-md;
+                for label[i] in SeedState.part-labels: WordPill {
+                    number: i + 1;
+                    word: label;
+                    clicked => {
+                        Actions.view-part(i);
+                        Navigate.words-page({ });
+                    }
+                }
+            }
+
+            // The optional word helps identify a complete set but leaks seed information.
+            if (!root.confirming-finish && !SeedState.show-checksum): Button {
+                width: 100%;
+                text: "Show Checksum Word";
+                variant: ButtonVariant.ghost;
+                size: ControlSize.sm;
+                full-width: true;
+                clicked => {
+                    Actions.toggle-checksum();
+                }
+            }
+
+            if (!root.confirming-finish && SeedState.show-checksum): Card {
+                width: 100%;
+                size: ControlSize.md;
+                title: "Checksum word: " + SeedState.checksum-word;
+                // TODO: localize
+                body: "Compare with the combined seed's last word. Keeping it with the parts reveals seed information and confirms a correct set to anyone who finds it.";
+            }
+
+            if (root.confirming-finish): Card {
+                width: 100%;
+                size: ControlSize.md;
+                // TODO: localize
+                title: "Are all parts backed up?";
+                // TODO: localize
+                body: "Check every copy and store all parts separately before finishing. Leaving erases the parts from this session; the app cannot recover a missed part.";
             }
         }
-    }
-
-    Rectangle {
-        vertical-stretch: 1;
-    }
-
-    // The spec suggests keeping the original's checksum word with the parts, so
-    // you can tell a correct set from an incorrect one. It is a real trade, so
-    // it is offered with the cost attached rather than done quietly.
-    if (!SeedState.show-checksum): Button {
-        width: 100%;
-        text: "Show Checksum Word";
-        variant: ButtonVariant.ghost;
-        size: ControlSize.sm;
-        full-width: true;
-        clicked => {
-            Actions.toggle-checksum();
-        }
-    }
-
-    if (SeedState.show-checksum): Card {
-        width: 100%;
-        size: ControlSize.md;
-        title: "Checksum word: " + SeedState.checksum-word;
-        body: "The last word of the original seed. Stored with the parts, it confirms you have reassembled the right set. It also gives away three bits of the real seed, and it tells anyone holding a correct set that they hold one.";
     }
 
     if (SeedState.entry-error != ""): Text {
@@ -71,14 +84,31 @@ export component PartsPagePage inherits PageBody {
         wrap: word-wrap;
     }
 
+    if (root.confirming-finish): Button {
+        width: 100%;
+        // TODO: localize
+        text: "Keep Reviewing";
+        variant: ButtonVariant.secondary;
+        size: ControlSize.sm;
+        full-width: true;
+        clicked => {
+            root.confirming-finish = false;
+        }
+    }
+
     Button {
         width: 100%;
-        text: "Done";
+        // TODO: localize
+        text: root.confirming-finish ? "Finish and Erase" : "Done";
         size: ControlSize.md;
         full-width: true;
         clicked => {
-            Actions.reset();
-            Navigate.return-home();
+            if (root.confirming-finish) {
+                Actions.reset();
+                Navigate.return-home();
+            } else {
+                root.confirming-finish = true;
+            }
         }
     }
 }

@@ -15,7 +15,7 @@ use bip39::{Language, Mnemonic};
 use slint_keyos_platform::{
     gui_server_api::navigation::qrscanner::{ScanQrOptions, ScanQrResult},
     navigation::open_qr_scanner,
-    slint::{ComponentHandle, ModelRc, SharedString, VecModel},
+    slint::{ComponentHandle, Image, ModelRc, SharedString, VecModel},
 };
 use zeroize::{Zeroize, Zeroizing};
 
@@ -92,6 +92,31 @@ pub struct AppState {
 }
 
 impl AppState {
+    fn accept_part(&mut self, mnemonic: Mnemonic) -> Result<bool, String> {
+        if self.collected.len() >= self.part_count {
+            // TODO: localize
+            return Err(
+                "This set is complete. Start a new combine to use different parts.".to_string(),
+            );
+        }
+        if let Some(expected) = self.locked_word_count() {
+            if mnemonic.word_count() != expected {
+                return Err(format!(
+                    "Part 1 has {expected} words and this one has {}. Every part of a set is the same length.",
+                    mnemonic.word_count()
+                ));
+            }
+        }
+        if self.collected.contains(&mnemonic) {
+            return Err(
+                "That is a part you have already entered. Each part is used once: entering one twice cancels it out and gives a different seed."
+                    .to_string(),
+            );
+        }
+        self.collected.push(mnemonic);
+        Ok(self.collected.len() == self.part_count)
+    }
+
     fn word_count(&self) -> usize {
         if self.words.is_empty() {
             12
@@ -173,7 +198,7 @@ pub fn init(ui: &AppWindow) {
                 current.mode = Mode::Split;
                 current.words = vec![String::new(); 12];
             }
-            clear_messages(&ui);
+            clear_session_ui(&ui);
             ui.global::<SeedState>().set_splitting(true);
             push_load_prompt(&ui, &state.borrow());
             push_entry(&ui, &state.borrow());
@@ -192,7 +217,7 @@ pub fn init(ui: &AppWindow) {
                 current.mode = Mode::Combine;
                 current.words = vec![String::new(); 12];
             }
-            clear_messages(&ui);
+            clear_session_ui(&ui);
             ui.global::<SeedState>().set_splitting(false);
             push_load_prompt(&ui, &state.borrow());
             push_entry(&ui, &state.borrow());
@@ -206,7 +231,13 @@ pub fn init(ui: &AppWindow) {
         move |count| {
             let Some(ui) = ui.upgrade() else { return };
             let count = (count.max(xor::MIN_PARTS as i32) as usize).min(xor::MAX_PARTS);
-            state.borrow_mut().part_count = count;
+            {
+                let mut current = state.borrow_mut();
+                if !current.collected.is_empty() {
+                    return;
+                }
+                current.part_count = count;
+            }
             push_load_prompt(&ui, &state.borrow());
             push_parts(&ui, &state.borrow());
         }
@@ -291,6 +322,7 @@ pub fn init(ui: &AppWindow) {
         move || {
             let Some(ui) = ui.upgrade() else { return false };
             let Some(data) = scan("Scan a SeedQR") else { return false };
+            let data = Zeroizing::new(data);
 
             match seed_input::parse_seedqr(&data) {
                 Ok(mnemonic) => match take_loaded(&ui, &state, mnemonic) {
@@ -438,7 +470,7 @@ pub fn init(ui: &AppWindow) {
         let state = state.clone();
         move || {
             let Some(ui) = ui.upgrade() else { return false };
-            let phrase = state.borrow().words.join(" ");
+            let phrase = Zeroizing::new(state.borrow().words.join(" "));
 
             let mnemonic = match Mnemonic::parse_in_normalized(Language::English, &phrase) {
                 Ok(mnemonic) => mnemonic,
@@ -640,6 +672,7 @@ pub fn init(ui: &AppWindow) {
         move || {
             let Some(ui) = ui.upgrade() else { return false };
             let Some(data) = scan("Scan your copy") else { return false };
+            let data = Zeroizing::new(data);
 
             let seed_state = ui.global::<SeedState>();
             match seed_input::parse_seedqr(&data)
@@ -701,19 +734,7 @@ pub fn init(ui: &AppWindow) {
                 current.clear();
                 current.words = vec![String::new(); 12];
             }
-            let seed_state = ui.global::<SeedState>();
-            clear_messages(&ui);
-            seed_state.set_words_entered(0);
-            seed_state.set_word_count_locked(false);
-            seed_state.set_loaded(false);
-            seed_state.set_seed_word_count(0);
-            seed_state.set_source_label(SharedString::new());
-            seed_state.set_qr_width(0);
-            seed_state.set_block_count(0);
-            seed_state.set_block_cells(ModelRc::new(VecModel::<i32>::default()));
-            seed_state.set_verify_title(SharedString::new());
-            seed_state.set_verify_detail(SharedString::new());
-            seed_state.set_verify_ok(false);
+            clear_session_ui(&ui);
             push_entry(&ui, &state.borrow());
             push_parts(&ui, &state.borrow());
             push_view(&ui, &state.borrow());
@@ -740,30 +761,7 @@ fn take_loaded(ui: &AppWindow, state: &Rc<RefCell<AppState>>, mnemonic: Mnemonic
             Ok(())
         }
         Mode::Combine => {
-            {
-                let current = state.borrow();
-                if let Some(expected) = current.locked_word_count() {
-                    if mnemonic.word_count() != expected {
-                        return Err(format!(
-                            "Part 1 has {expected} words and this one has {}. Every part of a set is the same length.",
-                            mnemonic.word_count()
-                        ));
-                    }
-                }
-                if current.collected.contains(&mnemonic) {
-                    return Err(
-                        "That is a part you have already entered. Each part is used once: entering one twice cancels it out and gives a different seed."
-                            .to_string(),
-                    );
-                }
-            }
-
-            state.borrow_mut().collected.push(mnemonic);
-
-            let done = {
-                let current = state.borrow();
-                current.collected.len() >= current.part_count
-            };
+            let done = state.borrow_mut().accept_part(mnemonic)?;
 
             if !done {
                 clear_messages(ui);
@@ -804,6 +802,31 @@ fn clear_messages(ui: &AppWindow) {
     seed_state.set_entry_text(SharedString::new());
     seed_state.set_entry_error(SharedString::new());
     seed_state.set_suggestions(ModelRc::new(VecModel::<SharedString>::default()));
+}
+
+fn clear_session_ui(ui: &AppWindow) {
+    let seed_state = ui.global::<SeedState>();
+    clear_messages(ui);
+    seed_state.set_words_entered(0);
+    seed_state.set_word_count_locked(false);
+    seed_state.set_loaded(false);
+    seed_state.set_seed_word_count(0);
+    seed_state.set_source_label(SharedString::new());
+    seed_state.set_part_labels(ModelRc::new(VecModel::<SharedString>::default()));
+    seed_state.set_checksum_word(SharedString::new());
+    seed_state.set_view_title(SharedString::new());
+    seed_state.set_view_hint(SharedString::new());
+    seed_state.set_view_cta(SharedString::new());
+    seed_state.set_view_left(ModelRc::new(VecModel::<SharedString>::default()));
+    seed_state.set_view_right(ModelRc::new(VecModel::<SharedString>::default()));
+    seed_state.set_qr_width(0);
+    seed_state.set_qr_preview(Image::default());
+    seed_state.set_minimap(Image::default());
+    seed_state.set_block_count(0);
+    seed_state.set_block_cells(ModelRc::new(VecModel::<i32>::default()));
+    seed_state.set_verify_title(SharedString::new());
+    seed_state.set_verify_detail(SharedString::new());
+    seed_state.set_verify_ok(false);
 }
 
 /// Open the system QR scanner. Returns the payload, or None if the user backed out.
@@ -932,7 +955,8 @@ fn push_view(ui: &AppWindow, state: &AppState) {
     seed_state.set_view_title(state.view_label.as_str().into());
     seed_state.set_view_hint(match state.mode {
         Mode::Split => "Write these words down. This part is a valid seed on its own, and it is not the seed you loaded.",
-        Mode::Combine => "This is the seed your parts rebuild. Nothing about the parts has changed.",
+        // TODO: localize
+        Mode::Combine => "Compare the last word with any check you kept. A BIP39 passphrase is still needed separately.",
     }
     .into());
     seed_state.set_view_cta(match state.mode {
@@ -991,4 +1015,25 @@ fn push_block(ui: &AppWindow, state: &AppState) {
     );
     seed_state.set_block_cells(ModelRc::new(VecModel::from(seedqr::cells_as_i32(grid, index))));
     seed_state.set_minimap(seedqr::render_minimap(grid, index, MINIMAP_PX));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn combine_refuses_an_extra_part_after_the_declared_count() {
+        let mut state = AppState {
+            part_count: 2,
+            ..AppState::default()
+        };
+        let first = Mnemonic::from_entropy(&[1; 16]).unwrap();
+        let second = Mnemonic::from_entropy(&[2; 16]).unwrap();
+        let third = Mnemonic::from_entropy(&[3; 16]).unwrap();
+
+        assert!(!state.accept_part(first).unwrap());
+        assert!(state.accept_part(second).unwrap());
+        assert!(state.accept_part(third).is_err());
+        assert_eq!(state.collected.len(), 2);
+    }
 }

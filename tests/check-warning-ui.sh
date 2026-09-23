@@ -5,9 +5,11 @@ cd "$(dirname "$0")/.."
 mkdir -p target/warning-previews
 
 viewer=(foundation-slint-viewer tests/warnings.slint
-    -L ui=target/foundation/ui/ui
-    -L theme=target/foundation/themes/slint)
+    -L ui=ui/ui
+    -L theme=ui/ui)
 "${viewer[@]}" --check
+parts_viewer=(foundation-slint-viewer tests/parts.slint -L ui=ui/ui -L theme=ui/ui)
+"${parts_viewer[@]}" --check
 
 for height in 760 800; do
     for dark in false true; do
@@ -28,5 +30,11 @@ for height in 760 800; do
         printf '{"window-height":%s,"dark":%s,"confirmation":true,"error":"Could not split that seed. Please try again."}' "$height" "$dark" |
             "${viewer[@]}" --load-data - --screenshot \
                 "target/warning-previews/error-${height}-dark-${dark}.png"
+        printf '{"window-height":%s,"dark":%s,"confirmation":true,"checksum":true}' "$height" "$dark" |
+            "${parts_viewer[@]}" --load-data - --screenshot \
+                "target/warning-previews/parts-finish-${height}-dark-${dark}.png"
+        printf '{"window-height":%s,"dark":%s,"confirmation":false,"checksum":true}' "$height" "$dark" |
+            "${parts_viewer[@]}" --load-data - --screenshot \
+                "target/warning-previews/parts-list-${height}-dark-${dark}.png"
     done
 done

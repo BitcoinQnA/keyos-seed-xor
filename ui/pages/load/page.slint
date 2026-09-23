@@ -59,18 +59,6 @@ export component LoadPagePage inherits PageBody {
 
     Button {
         width: 100%;
-        text: "Scan SeedQR";
-        size: ControlSize.md;
-        full-width: true;
-        clicked => {
-            if (Actions.load-scan()) {
-                root.go-onward();
-            }
-        }
-    }
-
-    Button {
-        width: 100%;
         text: "Enter Seed Words";
         variant: ButtonVariant.secondary;
         size: ControlSize.md;
@@ -78,6 +66,18 @@ export component LoadPagePage inherits PageBody {
         clicked => {
             Actions.begin-entry();
             Navigate.entry-page({ });
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Scan SeedQR";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.load-scan()) {
+                root.go-onward();
+            }
         }
     }
 }

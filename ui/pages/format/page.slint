@@ -68,13 +68,18 @@ export component FormatPagePage inherits PageBody {
 
     Button {
         width: 100%;
-        text: "Start Over";
+        // TODO: localize
+        text: SeedState.splitting ? "Back to Parts" : "Start Over";
         variant: ButtonVariant.ghost;
         size: ControlSize.sm;
         full-width: true;
         clicked => {
-            Actions.reset();
-            Navigate.return-home();
+            if (SeedState.splitting) {
+                Navigate.parts-page({ });
+            } else {
+                Actions.reset();
+                Navigate.return-home();
+            }
         }
     }
 

@@ -27,6 +27,10 @@ the originals changed. Same screens, different intent.
 **It is N of N.** Every part is required, there is no threshold, and there is no
 spare.
 
+**It covers seed words, not an optional BIP39 passphrase.** A wallet using a
+passphrase still requires that passphrase after the parts are combined. Keep it
+separately; the app never asks for or stores it.
+
 The dangerous part is what happens when a part goes missing. Combining a subset
 does not fail. It produces a different valid seed, opening a real wallet that is
 simply empty, and nothing on screen distinguishes that from success. So the app
@@ -60,9 +64,11 @@ Splitting generates N-1 parts and sets the last one to
 
 **The checksum word** is offered on the parts screen, not shown by default. The
 spec suggests recording the original's last word alongside the parts so you can
-confirm you have the right set. It also gives away three bits of the real seed,
-and tells anyone holding a correct set that they hold one. The trade is stated
-where the choice is made.
+compare it with the final word after combining. It reveals information about
+the original seed, and tells anyone holding a correct set that they hold one.
+For a 12-word mnemonic, the last word contains seven entropy bits and four
+checksum bits; for 24 words it contains three entropy bits and eight checksum
+bits. It is a manual comparison, not a proof that the backup is intact.
 
 **Random, not deterministic.** The spec has two generation modes. Only random is
 implemented: draw entropy from the TRNG, then double SHA-256 it. Deterministic
@@ -109,7 +115,11 @@ enforced at compile time: a successful build proves the permission is present.
 Seeds and parts live in memory for one session. There is no filesystem write
 permission, so the app cannot persist them even by mistake. `bip39` is built with
 its `zeroize` feature, so every `Mnemonic` scrubs itself on drop; `security::Seed`
-does the same; and `AppState::clear` scrubs the typed words explicitly.
+does the same; and `AppState::clear` scrubs the typed words explicitly. The app
+also clears the displayed QR images and word lists on reset. GUI and scanner
+libraries may hold transient copies during a live session, so this is not a
+guarantee that every byte in process memory is immediately erased. KeyOS
+sanitizes a process's pages on exit.
 
 This app cannot read or modify the device's stored master seed or seeds in Seed
 Vault. It operates only on a copy explicitly imported by the user, by scanning a
@@ -139,8 +149,11 @@ python3 scripts/pack-beta3.py target/keyos/seed-xor-sdk.app target/keyos/seed-xo
 The older SDK CLI can omit `minKeyosVersion` despite `min-keyos-version` being
 configured. Beta 3 rejects that archive as invalid. The check restores the
 configured minimum when needed and re-signs only the manifest with the existing
-publisher identity. It verifies both signatures, the app identity/version and
-all file hashes; the application binary is unchanged. Use a fresh output path.
+publisher identity. It verifies both secp256k1 signatures against that
+identity's public key, the app identity/version and all file hashes; the
+application binary is unchanged. The helper needs Python's `cryptography`
+package. Use a fresh output path. Passport performs its own signature check
+during installation.
 
 Everything runs inside the SDK Nix shell:
 
@@ -160,12 +173,10 @@ Outputs land in `target/keyos/`:
 - `keyos-seed-xor.app`, one archive, install from **Settings > Apps > Install App**
 - `keyos-seed-xor/`, the loose bundle, for `foundation sideload`
 
-Built and verified against **SDK 1.0.0**. The repo pins no SDK version:
-`Cargo.toml` points into `.foundation-sdk/current`, which is a gitignored symlink
-to `~/.foundation/sdk/current`. On a machine where that points somewhere else,
-the build silently uses that bundle instead, and later SDKs renumber message ids,
-so a mismatch shows up as behaviour that makes no sense rather than a clean
-error. Run `foundation doctor` first and check the SDK root it prints.
+Built and verified against **SDK 1.0.0** at workspace commit
+`039881500da0d1d14dc3468e7e5852d986bb898b`. `build.rs` checks the SDK
+bundle's manifest and fails if `.foundation-sdk/current` points to a different
+version or commit. Run `foundation doctor` first and check the SDK root it prints.
 
 ## Layout
 
@@ -228,8 +239,8 @@ the split/combine count picker, light/dark colours, both 480x800 and 480x760
 windows, and split errors. They use the real pages and SDK fonts without
 loading a seed or calling the RNG.
 
-24 core tests, seven SDK input/randomness tests and ten packaging tests. The
-ones that matter:
+24 core tests, four app-state/randomness tests, seven SDK input/randomness tests
+and sixteen packaging tests when `cosign2` is installed. The ones that matter:
 
 - **Both published acceptance vectors**, 24 words and 12 words, three parts
   each, reproduced exactly. A subtly wrong XOR still produces a valid-looking
@@ -251,7 +262,11 @@ ones that matter:
 - **Random-source failure produces no part**, and successful reads retain the
   specified double-SHA-256 conditioning.
 - **Packaging takes its version from Cargo**, rejects conflicting legacy
-  metadata, and validates the configured Beta 3 minimum.
+  metadata, validates the configured Beta 3 minimum, and rejects changed or
+  unsigned developer signatures and the wrong publisher key. One test signs a
+  temporary payload with `cosign2` and checks it with the Python verifier.
+- **An extra combine part is refused** after the declared count; returning from
+  the combined result cannot silently change the wallet.
 - Nine more over the SeedQR grid geometry, using SeedSigner's own vectors.
 
 ## Verification limits
@@ -260,9 +275,9 @@ ones that matter:
   and warning screens were exercised on Beta 3 with a public test seed. The
   hardware RNG, full split/combine round trip, camera verification, and block
   transcription still need an end-to-end device test after these fixes.
-- **Partial UI coverage.** The warning/count pages have rendered layout tests
-  at both app heights and in both themes. This is not coverage of every screen
-  or every callback.
+- **Partial UI coverage.** The warning/count and four-part pages have rendered
+  layout tests at both app heights and in both themes. The completion warning
+  and checksum card are visible. This is not coverage of every screen or callback.
 - **No security audit.** Automated tests and SDK compilation are not proof that
   this POC is safe for live funds.
 - **Strings are hardcoded English.** No `i18n/` and `include_translations:

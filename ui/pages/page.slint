@@ -37,17 +37,6 @@ export component MainPagePage inherits PageBody {
 
     Button {
         width: 100%;
-        text: "Split a Seed";
-        size: ControlSize.md;
-        full-width: true;
-        clicked => {
-            Actions.start-split();
-            Navigate.load-page({ });
-        }
-    }
-
-    Button {
-        width: 100%;
         text: "Combine Parts";
         variant: ButtonVariant.secondary;
         size: ControlSize.md;
@@ -55,6 +44,17 @@ export component MainPagePage inherits PageBody {
         clicked => {
             Actions.start-combine();
             Navigate.count-page({ });
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Split a Seed";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            Actions.start-split();
+            Navigate.load-page({ });
         }
     }
 

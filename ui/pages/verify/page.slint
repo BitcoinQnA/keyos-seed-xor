@@ -34,18 +34,6 @@ export component VerifyPagePage inherits PageBody {
 
     Button {
         width: 100%;
-        text: "Scan My Copy";
-        size: ControlSize.md;
-        full-width: true;
-        clicked => {
-            if (Actions.verify-scan()) {
-                Navigate.result-page({ });
-            }
-        }
-    }
-
-    Button {
-        width: 100%;
         text: "Skip Check";
         variant: ButtonVariant.ghost;
         size: ControlSize.sm;
@@ -53,6 +41,18 @@ export component VerifyPagePage inherits PageBody {
         clicked => {
             Actions.skip-verify();
             Navigate.result-page({ });
+        }
+    }
+
+    Button {
+        width: 100%;
+        text: "Scan My Copy";
+        size: ControlSize.md;
+        full-width: true;
+        clicked => {
+            if (Actions.verify-scan()) {
+                Navigate.result-page({ });
+            }
         }
     }
 }

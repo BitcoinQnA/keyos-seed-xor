@@ -7,13 +7,16 @@
 
 use seed_core::seedqr::{Cell, Grid, BLOCK};
 use slint_keyos_platform::slint::{Image, Rgba8Pixel, SharedPixelBuffer};
+use zeroize::Zeroizing;
 
 const HIGHLIGHT: [u8; 3] = [0xf7, 0x9a, 0x23];
 
 /// Build the code for a seed, using the SDK's own SeedQR payload encoders.
 pub fn encode(seed: &security::Seed, compact: bool) -> Result<Grid, String> {
-    let payload = if compact { seed.to_compact_seed_qr_data() } else { seed.to_standard_seed_qr_data() }
-        .map_err(|e| format!("Could not build the code: {e}"))?;
+    let payload = Zeroizing::new(
+        if compact { seed.to_compact_seed_qr_data() } else { seed.to_standard_seed_qr_data() }
+            .map_err(|e| format!("Could not build the code: {e}"))?,
+    );
 
     Grid::build(&payload).map_err(|e| e.to_string())
 }

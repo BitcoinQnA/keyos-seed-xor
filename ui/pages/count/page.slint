@@ -85,6 +85,15 @@ export component CountPagePage inherits PageBody {
                 body: "This screen also makes a new wallet. Combine seeds you already have and you get a fresh seed derived from all of them, with nothing about the originals changed.";
             }
 
+            Card {
+                width: 100%;
+                size: ControlSize.md;
+                // TODO: localize
+                title: "BIP39 passphrases stay separate";
+                // TODO: localize
+                body: "Seed XOR works on seed words only. If your wallet uses an optional BIP39 passphrase, these parts do not include it. Keep and recover that passphrase separately.";
+            }
+
             if (SeedState.entry-error != ""): Text {
                 text: SeedState.entry-error;
                 color: Theme.palette-danger;

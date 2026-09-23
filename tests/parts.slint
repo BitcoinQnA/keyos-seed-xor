@@ -1,0 +1,38 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme } from "@ui/theme.slint";
+import { SeedState } from "../ui/globals.slint";
+import { PartsPagePage } from "../ui/pages/parts/page.slint";
+import "../.foundation-sdk/current/resources/fonts/Montserrat-Regular.ttf";
+import "../.foundation-sdk/current/resources/fonts/Montserrat-Medium.ttf";
+
+export component PartsPreview inherits Window {
+    width: 480px;
+    height: root.window-height * 1px;
+    in property <int> window-height: 760;
+    in property <bool> dark: false;
+    in property <bool> confirmation: false;
+    in property <bool> checksum: false;
+
+    init => {
+        SeedState.part-count = 4;
+        SeedState.part-labels = ["Part 1 of 4", "Part 2 of 4", "Part 3 of 4", "Part 4 of 4"];
+        SeedState.parts-summary = "4 parts of 24 words. All 4 are needed to rebuild the seed.";
+        SeedState.checksum-word = "example";
+    }
+
+    changed dark => {
+        Theme.is-dark = root.dark;
+        Theme.palette-background = root.dark ? #231f20 : #ffffff;
+        Theme.palette-surface = root.dark ? #231f20 : #ffffff;
+        Theme.palette-foreground = root.dark ? #ffffff : #231f20;
+        Theme.palette-muted = root.dark ? #b7b6b7 : #959394;
+        Theme.palette-border = root.dark ? #5a595a : #d5d4d5;
+    }
+    changed checksum => { SeedState.show-checksum = root.checksum; }
+
+    PartsPagePage {
+        confirming-finish: root.confirmation;
+    }
+}
