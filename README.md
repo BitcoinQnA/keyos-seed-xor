@@ -3,8 +3,8 @@
 A KeyOS SDK app for Passport Prime. It splits one BIP39 seed into parts that are
 each a valid seed in their own right, and puts a set of parts back together.
 
-**Internal proof of concept, not a production release.** Do not rely on it as
-the only backup of a seed holding funds.
+**Beta software, not security-audited.** Do not rely on it as the only backup of
+a seed holding funds.
 
 The scheme is Seed XOR, an open standard that invites other implementations.
 This is one.
@@ -42,6 +42,8 @@ Entering the same part twice is refused, with the reason. A value XOR-ed with
 itself is zero, so a duplicate cancels both copies out; two identical parts
 produce all-zero entropy, which is the `abandon abandon … art` wallet. Handing
 back a live, long-swept address with no error at all is worse than a refusal.
+The reverse also holds: an all-zero seed cannot be split into two *distinct*
+parts, so the app asks for three or four instead.
 
 ## The algorithm
 
@@ -130,8 +132,9 @@ change the device's stored seed.
 
 The supported firmware baseline is **KeyOS 1.4.0-beta3**. Its release source
 provides the SeedQR encoders/parser and scanner API used here, and it is the
-firmware used for the on-device UI checks. Older firmware is not claimed as
-supported. The prerelease suffix is intentional: `1.4.0` would exclude Beta 3.
+firmware used for the on-device UI checks. The app has also been exercised on
+KeyOS 1.4.0. Older firmware is not claimed as supported. The prerelease suffix
+is intentional: `1.4.0` would exclude Beta 3.
 
 Use a Foundation CLI that reads the app version from `Cargo.toml` (verified with
 `foundation 1.0.0 (039881500da0)`). Older binaries also report `1.0.0` but require
@@ -227,17 +230,22 @@ cargo test --test sdk_inputs
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
-After an SDK build/check has generated the router and theme files, render both
-split warning screens with the bundled viewer:
+After an SDK build/check has generated the router and theme files, render the
+warning and word-viewer screens with the bundled viewer:
 
 ```bash
 bash tests/check-warning-ui.sh
+bash tests/check-words-ui.sh
 ```
 
 The previews in `target/warning-previews/` cover two, three and four parts,
 the split/combine count picker, light/dark colours, both 480x800 and 480x760
 windows, and split errors. They use the real pages and SDK fonts without
 loading a seed or calling the RNG.
+
+The `target/word-previews/` images check the 24-word viewer in both themes,
+both app heights, both pages, and split/combine modes. In particular, both
+bottom actions remain visible in the denser combine layout.
 
 24 core tests, four app-state/randomness tests, seven SDK input/randomness tests
 and sixteen packaging tests when `cosign2` is installed. The ones that matter:
@@ -271,15 +279,16 @@ and sixteen packaging tests when `cosign2` is installed. The ones that matter:
 
 ## Verification limits
 
-- **Partial hardware coverage.** The welcome, manual entry, part-count, import,
-  and warning screens were exercised on Beta 3 with a public test seed. The
-  hardware RNG, full split/combine round trip, camera verification, and block
-  transcription still need an end-to-end device test after these fixes.
-- **Partial UI coverage.** The warning/count and four-part pages have rendered
-  layout tests at both app heights and in both themes. The completion warning
-  and checksum card are visible. This is not coverage of every screen or callback.
+- **Partial hardware coverage.** Public test seeds exercised a 12-word,
+  three-part split/combine round trip, a two-part split, and a 24-word,
+  four-part split on KeyOS 1.4.0. Word review, checksum, SeedQR format choice,
+  scanner launch/cancel, and session reset were also exercised. A physical
+  camera scan-back and complete hand transcription of a SeedQR remain untested.
+- **Partial UI coverage.** Warning/count, four-part, and 24-word viewer pages
+  have rendered layout checks at both app heights and in both themes. This is
+  not coverage of every screen or callback.
 - **No security audit.** Automated tests and SDK compilation are not proof that
-  this POC is safe for live funds.
+  this beta is safe for live funds.
 - **Strings are hardcoded English.** No `i18n/` and `include_translations:
   false`, matching the SDK template.
 

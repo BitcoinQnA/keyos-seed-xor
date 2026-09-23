@@ -60,6 +60,8 @@ pub enum XorError {
     /// all-zero entropy, which is the well known `abandon abandon ... art`
     /// wallet: a real, long-swept address rather than a failure.
     DuplicateParts,
+    /// A zero-entropy seed has no two distinct parts that XOR back to it.
+    ZeroSeedTwoParts,
     /// The caller supplied the wrong number of entropy pieces, or a piece of the
     /// wrong length.
     Entropy(String),
@@ -76,6 +78,11 @@ impl core::fmt::Display for XorError {
             }
             Self::WordCount(n) => write!(f, "{n} words: Seed XOR takes 12, 18 or 24"),
             Self::DuplicateParts => write!(f, "two of the parts are the same seed"),
+            // TODO: localize
+            Self::ZeroSeedTwoParts => write!(
+                f,
+                "An all-zero seed cannot make two distinct parts. Choose 3 or 4 parts."
+            ),
             Self::Entropy(why) => write!(f, "{why}"),
             Self::Bip39(why) => write!(f, "{why}"),
         }
@@ -118,7 +125,11 @@ pub fn combine(parts: &[Mnemonic]) -> Result<Mnemonic, XorError> {
 /// Randomness stays out on purpose: the app passes bytes drawn from the TRNG,
 /// and the tests pass fixed bytes, so the same code is exercised both times.
 /// Use [`condition_random`] on raw TRNG bytes before passing them in.
-pub fn split(seed: &Mnemonic, count: usize, entropy: &[Vec<u8>]) -> Result<Vec<Mnemonic>, XorError> {
+pub fn split(
+    seed: &Mnemonic,
+    count: usize,
+    entropy: &[Vec<u8>],
+) -> Result<Vec<Mnemonic>, XorError> {
     if !(MIN_PARTS..=MAX_PARTS).contains(&count) {
         return Err(XorError::PartCount(count));
     }
@@ -144,6 +155,9 @@ pub fn split(seed: &Mnemonic, count: usize, entropy: &[Vec<u8>]) -> Result<Vec<M
     // The last part is the seed with every other part XOR-ed out of it, so the
     // whole set folds back to the seed.
     let mut last = Zeroizing::new(seed.to_entropy());
+    if count == 2 && last.iter().all(|byte| *byte == 0) {
+        return Err(XorError::ZeroSeedTwoParts);
+    }
     for piece in entropy {
         for (acc, byte) in last.iter_mut().zip(piece) {
             *acc ^= byte;
@@ -205,12 +219,14 @@ fn fold(entropies: &[Vec<u8>]) -> Result<Mnemonic, XorError> {
         }
     }
 
-    Mnemonic::from_entropy_in(Language::English, &acc)
-        .map_err(|e| XorError::Bip39(e.to_string()))
+    Mnemonic::from_entropy_in(Language::English, &acc).map_err(|e| XorError::Bip39(e.to_string()))
 }
 
 fn has_duplicate<T: PartialEq>(parts: &[T]) -> bool {
-    parts.iter().enumerate().any(|(i, a)| parts[i + 1..].iter().any(|b| a == b))
+    parts
+        .iter()
+        .enumerate()
+        .any(|(i, a)| parts[i + 1..].iter().any(|b| a == b))
 }
 
 #[cfg(test)]
@@ -227,10 +243,14 @@ mod tests {
     const V24_RESULT: &str = "silent toe meat possible chair blossom wait occur this worth option bag \
                               nurse find fish scene bench asthma bike wage world quit primary indoor";
 
-    const V12_A: &str = "romance wink lottery autumn shop bring dawn tongue range crater truth ability";
-    const V12_B: &str = "boat unfair shell violin tree robust open ride visual forest vintage approve";
-    const V12_C: &str = "lion misery divide hurry latin fluid camp advance illegal lab pyramid unhappy";
-    const V12_RESULT: &str = "cannon opinion leader nephew found yard metal galaxy crouch between real trade";
+    const V12_A: &str =
+        "romance wink lottery autumn shop bring dawn tongue range crater truth ability";
+    const V12_B: &str =
+        "boat unfair shell violin tree robust open ride visual forest vintage approve";
+    const V12_C: &str =
+        "lion misery divide hurry latin fluid camp advance illegal lab pyramid unhappy";
+    const V12_RESULT: &str =
+        "cannon opinion leader nephew found yard metal galaxy crouch between real trade";
 
     fn m(phrase: &str) -> Mnemonic {
         // The vectors above are line-wrapped, so collapse the runs of spaces.
@@ -342,16 +362,25 @@ mod tests {
     fn any_proper_subset_gives_a_different_seed() {
         let seed =
             Mnemonic::from_entropy_in(Language::English, &fixture("subset-seed", 32)).unwrap();
-        let entropy: Vec<Vec<u8>> =
-            (0..3).map(|i| fixture(&format!("subset-{i}"), 32)).collect();
+        let entropy: Vec<Vec<u8>> = (0..3)
+            .map(|i| fixture(&format!("subset-{i}"), 32))
+            .collect();
         let parts = split(&seed, 4, &entropy).expect("splits");
 
         // Every 2 and 3 part subset of the 4.
         for skip in 0..4 {
-            let three: Vec<Mnemonic> =
-                parts.iter().enumerate().filter(|(i, _)| *i != skip).map(|(_, p)| p.clone()).collect();
+            let three: Vec<Mnemonic> = parts
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| *i != skip)
+                .map(|(_, p)| p.clone())
+                .collect();
             let out = combine(&three).expect("still a valid seed, just the wrong one");
-            assert_ne!(phrase(&out), phrase(&seed), "3 of 4 (missing {skip}) must not be the seed");
+            assert_ne!(
+                phrase(&out),
+                phrase(&seed),
+                "3 of 4 (missing {skip}) must not be the seed"
+            );
 
             let two: Vec<Mnemonic> = three[..2].to_vec();
             let out = combine(&two).expect("still a valid seed, just the wrong one");
@@ -372,7 +401,10 @@ mod tests {
     #[test]
     fn duplicate_parts_are_refused_rather_than_yielding_the_zero_seed() {
         let a = m(V24_A);
-        assert_eq!(combine(&[a.clone(), a.clone()]).unwrap_err(), XorError::DuplicateParts);
+        assert_eq!(
+            combine(&[a.clone(), a.clone()]).unwrap_err(),
+            XorError::DuplicateParts
+        );
         assert_eq!(
             combine(&[a.clone(), m(V24_B), a]).unwrap_err(),
             XorError::DuplicateParts
@@ -390,7 +422,10 @@ mod tests {
             );
 
             let zero = Mnemonic::from_entropy(&vec![0; len]).unwrap();
-            assert_eq!(split(&zero, 2, &[part]).unwrap_err(), XorError::DuplicateParts);
+            assert_eq!(
+                split(&zero, 2, &[part]).unwrap_err(),
+                XorError::ZeroSeedTwoParts
+            );
         }
     }
 
@@ -406,7 +441,10 @@ mod tests {
     #[test]
     fn part_counts_outside_two_to_four_are_rejected() {
         let a = m(V24_A);
-        assert_eq!(combine(std::slice::from_ref(&a)).unwrap_err(), XorError::PartCount(1));
+        assert_eq!(
+            combine(std::slice::from_ref(&a)).unwrap_err(),
+            XorError::PartCount(1)
+        );
         assert_eq!(combine(&[]).unwrap_err(), XorError::PartCount(0));
 
         let five: Vec<Mnemonic> = std::iter::repeat_n(a.clone(), 5).collect();
@@ -453,7 +491,10 @@ mod tests {
             assert_eq!(out[..], expected[..len]);
         }
         assert_eq!(condition_random(&raw, 32), condition_random(&raw, 32));
-        assert_ne!(condition_random(&raw, 32), condition_random(&[0x43u8; 32], 32));
+        assert_ne!(
+            condition_random(&raw, 32),
+            condition_random(&[0x43u8; 32], 32)
+        );
     }
 
     /// Splitting seeds you already hold is the same operation as combining them,

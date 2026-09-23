@@ -1,0 +1,45 @@
+// SPDX-FileCopyrightText: 2026 Foundation Devices, Inc. <hello@foundation.xyz>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+import { Theme } from "@ui/theme.slint";
+import { SeedState } from "../ui/globals.slint";
+import { WordsPagePage } from "../ui/pages/words/page.slint";
+import "../.foundation-sdk/current/resources/fonts/Montserrat-Regular.ttf";
+import "../.foundation-sdk/current/resources/fonts/Montserrat-Medium.ttf";
+
+export component WordsPreview inherits Window {
+    width: 480px;
+    height: root.window-height * 1px;
+    in property <int> window-height: 760;
+    in property <bool> dark: false;
+    in property <bool> splitting: true;
+    in property <bool> second-page: false;
+
+    function apply-state() {
+        SeedState.splitting = root.splitting;
+        SeedState.view-title = root.splitting ? "Part 4 of 4" : "Combined from 4 parts";
+        SeedState.view-hint = root.splitting
+            ? "Write these words down. This part is a valid seed on its own, and it is not the seed you loaded."
+            : "Compare the last word with any check you kept. A BIP39 passphrase is still needed separately.";
+        SeedState.view-cta = root.splitting ? "Transcribe This Part" : "Transcribe This Seed";
+        SeedState.view-page-count = 2;
+        SeedState.view-page = root.second-page ? 1 : 0;
+        SeedState.view-left-offset = root.second-page ? 12 : 0;
+        SeedState.view-right-offset = root.second-page ? 18 : 6;
+        SeedState.view-left = ["pencil", "diamond", "shed", "bullet", "cash", "nasty"];
+        SeedState.view-right = ["school", "slot", "upper", "wool", "biology", "father"];
+        Theme.is-dark = root.dark;
+        Theme.palette-background = root.dark ? #231f20 : #ffffff;
+        Theme.palette-surface = root.dark ? #231f20 : #ffffff;
+        Theme.palette-foreground = root.dark ? #ffffff : #231f20;
+        Theme.palette-muted = root.dark ? #b7b6b7 : #959394;
+        Theme.palette-border = root.dark ? #5a595a : #d5d4d5;
+    }
+
+    init => { root.apply-state(); }
+    changed dark => { root.apply-state(); }
+    changed splitting => { root.apply-state(); }
+    changed second-page => { root.apply-state(); }
+
+    WordsPagePage { }
+}

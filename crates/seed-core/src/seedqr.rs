@@ -17,7 +17,9 @@ const EC_LEVEL: EcLevel = EcLevel::L;
 pub struct BuildError(pub String);
 
 impl core::fmt::Display for BuildError {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result { write!(f, "{}", self.0) }
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
 /// What to mark in one cell of a transcription block.
@@ -32,7 +34,9 @@ pub enum Cell {
 }
 
 impl Cell {
-    pub fn as_i32(self) -> i32 { self as i32 }
+    pub fn as_i32(self) -> i32 {
+        self as i32
+    }
 }
 
 pub struct Grid {
@@ -48,14 +52,22 @@ impl Grid {
             .map_err(|e| BuildError(format!("could not build the code: {e}")))?;
 
         let width = code.width();
-        let modules = code.to_colors().into_iter().map(|c| c == qrcode::Color::Dark).collect();
+        let modules = code
+            .to_colors()
+            .into_iter()
+            .map(|c| c == qrcode::Color::Dark)
+            .collect();
 
         Ok(Self { width, modules })
     }
 
-    pub fn width(&self) -> usize { self.width }
+    pub fn width(&self) -> usize {
+        self.width
+    }
 
-    pub fn blocks_across(&self) -> usize { self.width.div_ceil(BLOCK) }
+    pub fn blocks_across(&self) -> usize {
+        self.width.div_ceil(BLOCK)
+    }
 
     pub fn block_count(&self) -> usize {
         let across = self.blocks_across();
@@ -79,7 +91,12 @@ impl Grid {
     /// subtitle.
     pub fn block_extent(&self, index: usize) -> (usize, usize, usize, usize) {
         let (row0, col0) = self.block_origin(index);
-        (row0 + 1, (row0 + BLOCK).min(self.width), col0 + 1, (col0 + BLOCK).min(self.width))
+        (
+            row0 + 1,
+            (row0 + BLOCK).min(self.width),
+            col0 + 1,
+            (col0 + BLOCK).min(self.width),
+        )
     }
 
     /// One entry per cell of the block, row-major.
@@ -107,8 +124,10 @@ mod tests {
     use bip39::{Language, Mnemonic};
 
     // SeedSigner's own test vectors, docs/seed_qr/README.md
-    const V12: &str = "attack pizza motion avocado network gather crop fresh patrol unusual wild holiday";
-    const V24: &str = "attack pizza motion avocado network gather crop fresh patrol unusual wild holiday \
+    const V12: &str =
+        "attack pizza motion avocado network gather crop fresh patrol unusual wild holiday";
+    const V24: &str =
+        "attack pizza motion avocado network gather crop fresh patrol unusual wild holiday \
                        candy pony ranch winter theme error hybrid van cereal salon goddess expire";
 
     fn mnemonic(phrase: &str) -> Mnemonic {
@@ -117,11 +136,16 @@ mod tests {
 
     /// Mirrors security::Seed::to_standard_seed_qr_data
     fn standard(m: &Mnemonic) -> Vec<u8> {
-        m.word_indices().map(|i| format!("{i:04}")).collect::<String>().into_bytes()
+        m.word_indices()
+            .map(|i| format!("{i:04}"))
+            .collect::<String>()
+            .into_bytes()
     }
 
     /// Mirrors security::Seed::to_compact_seed_qr_data
-    fn compact(m: &Mnemonic) -> Vec<u8> { m.to_entropy() }
+    fn compact(m: &Mnemonic) -> Vec<u8> {
+        m.to_entropy()
+    }
 
     fn cases() -> Vec<(&'static str, Vec<u8>, usize)> {
         let m12 = mnemonic(V12);
@@ -148,7 +172,11 @@ mod tests {
     fn grid_sizes_match_the_spec() {
         for (label, payload, expected) in cases() {
             let grid = Grid::build(&payload).expect("builds");
-            assert_eq!(grid.width(), expected, "{label} should be {expected}x{expected}");
+            assert_eq!(
+                grid.width(),
+                expected,
+                "{label} should be {expected}x{expected}"
+            );
         }
     }
 
@@ -160,7 +188,9 @@ mod tests {
     #[test]
     fn error_correction_level_is_load_bearing_for_compact() {
         let level_m = |payload: &[u8]| {
-            QrCode::with_error_correction_level(payload, EcLevel::M).unwrap().width()
+            QrCode::with_error_correction_level(payload, EcLevel::M)
+                .unwrap()
+                .width()
         };
 
         for (label, payload, expected) in cases() {
@@ -196,7 +226,10 @@ mod tests {
                 }
             }
 
-            assert!(seen.iter().all(|n| *n == 1), "{label}: every module covered exactly once");
+            assert!(
+                seen.iter().all(|n| *n == 1),
+                "{label}: every module covered exactly once"
+            );
         }
     }
 
@@ -227,7 +260,11 @@ mod tests {
         for (label, payload, _) in cases() {
             let grid = Grid::build(&payload).unwrap();
             for block in 0..grid.block_count() {
-                assert_eq!(grid.block_cells(block).len(), BLOCK * BLOCK, "{label} block {block}");
+                assert_eq!(
+                    grid.block_cells(block).len(),
+                    BLOCK * BLOCK,
+                    "{label} block {block}"
+                );
             }
         }
     }
@@ -240,10 +277,18 @@ mod tests {
 
             let (r0, r1, c0, c1) = grid.block_extent(0);
             assert_eq!((r0, c0), (1, 1), "{label} first block starts at 1,1");
-            assert_eq!((r1, c1), (BLOCK, BLOCK), "{label} first block ends at the block size");
+            assert_eq!(
+                (r1, c1),
+                (BLOCK, BLOCK),
+                "{label} first block ends at the block size"
+            );
 
             let (_, r1, _, c1) = grid.block_extent(last);
-            assert_eq!((r1, c1), (width, width), "{label} last block ends at the code edge");
+            assert_eq!(
+                (r1, c1),
+                (width, width),
+                "{label} last block ends at the code edge"
+            );
         }
     }
 

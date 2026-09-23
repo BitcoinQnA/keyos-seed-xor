@@ -321,7 +321,9 @@ pub fn init(ui: &AppWindow) {
         let state = state.clone();
         move || {
             let Some(ui) = ui.upgrade() else { return false };
-            let Some(data) = scan("Scan a SeedQR") else { return false };
+            let Some(data) = scan("Scan a SeedQR") else {
+                return false;
+            };
             let data = Zeroizing::new(data);
 
             match seed_input::parse_seedqr(&data) {
@@ -406,7 +408,8 @@ pub fn init(ui: &AppWindow) {
                     .map(|w| SharedString::from(*w))
                     .collect()
             };
-            ui.global::<SeedState>().set_suggestions(ModelRc::new(VecModel::from(words)));
+            ui.global::<SeedState>()
+                .set_suggestions(ModelRc::new(VecModel::from(words)));
         }
     });
 
@@ -474,12 +477,10 @@ pub fn init(ui: &AppWindow) {
 
             let mnemonic = match Mnemonic::parse_in_normalized(Language::English, &phrase) {
                 Ok(mnemonic) => mnemonic,
-                Err(_) => {
-                    return fail(
-                        &ui,
-                        "Those words are not a valid seed. Check the last word, then check the rest.",
-                    )
-                }
+                Err(_) => return fail(
+                    &ui,
+                    "Those words are not a valid seed. Check the last word, then check the rest.",
+                ),
             };
 
             match take_loaded(&ui, &state, mnemonic) {
@@ -529,7 +530,9 @@ pub fn init(ui: &AppWindow) {
             {
                 let mut current = state.borrow_mut();
                 let index = index.max(0) as usize;
-                let Some(part) = current.parts.get(index).cloned() else { return };
+                let Some(part) = current.parts.get(index).cloned() else {
+                    return;
+                };
                 let count = current.part_count;
                 current.viewing = Some(part);
                 current.view_label = format!("Part {} of {}", index + 1, count);
@@ -546,7 +549,11 @@ pub fn init(ui: &AppWindow) {
             let Some(ui) = ui.upgrade() else { return };
             {
                 let mut current = state.borrow_mut();
-                let words = current.viewing.as_ref().map(|m| m.word_count()).unwrap_or(0);
+                let words = current
+                    .viewing
+                    .as_ref()
+                    .map(|m| m.word_count())
+                    .unwrap_or(0);
                 if current.view_page + 1 < words.div_ceil(PER_PAGE) {
                     current.view_page += 1;
                 }
@@ -600,7 +607,9 @@ pub fn init(ui: &AppWindow) {
             let Some(ui) = ui.upgrade() else { return false };
             let encoded = {
                 let current = state.borrow();
-                let Some(seed) = current.seed.as_ref() else { return false };
+                let Some(seed) = current.seed.as_ref() else {
+                    return false;
+                };
                 seedqr::encode(seed, compact)
             };
 
@@ -627,8 +636,12 @@ pub fn init(ui: &AppWindow) {
             let Some(ui) = ui.upgrade() else { return false };
             let moved = {
                 let mut current = state.borrow_mut();
-                let last =
-                    current.grid.as_ref().map(|g| g.block_count()).unwrap_or(0).saturating_sub(1);
+                let last = current
+                    .grid
+                    .as_ref()
+                    .map(|g| g.block_count())
+                    .unwrap_or(0)
+                    .saturating_sub(1);
                 if current.block_index < last {
                     current.block_index += 1;
                     true
@@ -747,7 +760,11 @@ pub fn init(ui: &AppWindow) {
 /// The split flow takes one seed and moves on to the part count. The combine
 /// flow takes them one at a time and folds them together once the last one is
 /// in.
-fn take_loaded(ui: &AppWindow, state: &Rc<RefCell<AppState>>, mnemonic: Mnemonic) -> Result<(), String> {
+fn take_loaded(
+    ui: &AppWindow,
+    state: &Rc<RefCell<AppState>>,
+    mnemonic: Mnemonic,
+) -> Result<(), String> {
     seed_input::ensure_supported(&mnemonic)?;
     let seed_state = ui.global::<SeedState>();
     let mode = state.borrow().mode;
@@ -845,7 +862,10 @@ fn scan(title: &str) -> Option<Vec<u8>> {
 }
 
 /// Split a word list into the firmware's two columns of six, for one page.
-fn columns(words: &[SharedString], page: usize) -> (Vec<SharedString>, Vec<SharedString>, usize, usize, usize) {
+fn columns(
+    words: &[SharedString],
+    page: usize,
+) -> (Vec<SharedString>, Vec<SharedString>, usize, usize, usize) {
     let count = words.len();
     let pages = count.div_ceil(PER_PAGE).max(1);
     let page = page.min(pages - 1);
@@ -931,7 +951,8 @@ fn push_parts(ui: &AppWindow, state: &AppState) {
 
     let words = state.source.as_ref().map(|m| m.word_count()).unwrap_or(0);
     seed_state.set_parts_summary(
-        format!("{count} parts of {words} words. All {count} are needed to rebuild the seed.").into(),
+        format!("{count} parts of {words} words. All {count} are needed to rebuild the seed.")
+            .into(),
     );
 
     seed_state.set_show_checksum(state.show_checksum);
@@ -959,11 +980,13 @@ fn push_view(ui: &AppWindow, state: &AppState) {
         Mode::Combine => "Compare the last word with any check you kept. A BIP39 passphrase is still needed separately.",
     }
     .into());
-    seed_state.set_view_cta(match state.mode {
-        Mode::Split => "Transcribe This Part",
-        Mode::Combine => "Transcribe This Seed",
-    }
-    .into());
+    seed_state.set_view_cta(
+        match state.mode {
+            Mode::Split => "Transcribe This Part",
+            Mode::Combine => "Transcribe This Seed",
+        }
+        .into(),
+    );
 
     seed_state.set_view_page(state.view_page.min(pages - 1) as i32);
     seed_state.set_view_page_count(pages as i32);
@@ -975,22 +998,32 @@ fn push_view(ui: &AppWindow, state: &AppState) {
 
 fn push_seed(ui: &AppWindow, state: &AppState, source: &str) {
     let seed_state = ui.global::<SeedState>();
-    let Some(seed) = state.seed.as_ref() else { return };
+    let Some(seed) = state.seed.as_ref() else {
+        return;
+    };
     let words = seed.bytes().len() * 3 / 4;
 
     seed_state.set_loaded(true);
     seed_state.set_seed_word_count(words as i32);
     seed_state.set_source_label(source.into());
-    seed_state.set_standard_label(format!("{0} by {0} grid", if words == 12 { 25 } else { 29 }).into());
-    seed_state.set_compact_label(format!("{0} by {0} grid", if words == 12 { 21 } else { 25 }).into());
+    seed_state
+        .set_standard_label(format!("{0} by {0} grid", if words == 12 { 25 } else { 29 }).into());
+    seed_state
+        .set_compact_label(format!("{0} by {0} grid", if words == 12 { 21 } else { 25 }).into());
 }
 
 fn push_grid(ui: &AppWindow, state: &AppState) {
     let seed_state = ui.global::<SeedState>();
-    let Some(grid) = state.grid.as_ref() else { return };
+    let Some(grid) = state.grid.as_ref() else {
+        return;
+    };
 
     seed_state.set_format_label(
-        format!("{} SeedQR", if state.compact { "Compact" } else { "Standard" }).into(),
+        format!(
+            "{} SeedQR",
+            if state.compact { "Compact" } else { "Standard" }
+        )
+        .into(),
     );
     seed_state.set_qr_width(grid.width() as i32);
     seed_state.set_block_size(BLOCK as i32);
@@ -1001,7 +1034,9 @@ fn push_grid(ui: &AppWindow, state: &AppState) {
 
 fn push_block(ui: &AppWindow, state: &AppState) {
     let seed_state = ui.global::<SeedState>();
-    let Some(grid) = state.grid.as_ref() else { return };
+    let Some(grid) = state.grid.as_ref() else {
+        return;
+    };
 
     let index = state.block_index;
     let count = grid.block_count();
@@ -1010,10 +1045,11 @@ fn push_block(ui: &AppWindow, state: &AppState) {
     seed_state.set_block_index(index as i32);
     seed_state.set_last_block(index + 1 >= count);
     seed_state.set_block_label(format!("Block {} of {}", index + 1, count).into());
-    seed_state.set_block_range(
-        format!("Rows {row_from}-{row_to}, columns {col_from}-{col_to}").into(),
-    );
-    seed_state.set_block_cells(ModelRc::new(VecModel::from(seedqr::cells_as_i32(grid, index))));
+    seed_state
+        .set_block_range(format!("Rows {row_from}-{row_to}, columns {col_from}-{col_to}").into());
+    seed_state.set_block_cells(ModelRc::new(VecModel::from(seedqr::cells_as_i32(
+        grid, index,
+    ))));
     seed_state.set_minimap(seedqr::render_minimap(grid, index, MINIMAP_PX));
 }
 
