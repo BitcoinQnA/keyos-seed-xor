@@ -3,7 +3,7 @@
 A KeyOS SDK app for Passport Prime. It splits one BIP39 seed into parts that are
 each a valid seed in their own right, and puts a set of parts back together.
 
-**Beta software, not security-audited.** Do not rely on it as the only backup of
+**Not independently security-audited.** Do not rely on it as the only backup of
 a seed holding funds.
 
 The scheme is Seed XOR, an open standard that invites other implementations.
@@ -130,11 +130,9 @@ change the device's stored seed.
 
 ## Build
 
-The supported firmware baseline is **KeyOS 1.4.0-beta3**. Its release source
-provides the SeedQR encoders/parser and scanner API used here, and it is the
-firmware used for the on-device UI checks. The app has also been exercised on
-KeyOS 1.4.0. Older firmware is not claimed as supported. The prerelease suffix
-is intentional: `1.4.0` would exclude Beta 3.
+The supported firmware baseline is **KeyOS 1.4 or later**. It provides the
+SeedQR encoders/parser and scanner API used here. The app has been exercised on
+KeyOS 1.4.0. Older stable firmware is not claimed as supported.
 
 Use a Foundation CLI that reads the app version from `Cargo.toml` (verified with
 `foundation 1.0.0 (039881500da0)`). Older binaries also report `1.0.0` but require
@@ -142,7 +140,7 @@ the deprecated `app-config.toml` version field; they cannot build this config.
 `Cargo.toml` is the single source of the app version, including for the archive
 validator below.
 
-For Beta 3 installation, validate the packed archive before copying it:
+Validate the packed archive before copying it:
 
 ```bash
 foundation pack --release --out target/keyos/seed-xor-sdk.app
@@ -150,7 +148,7 @@ python3 scripts/pack-beta3.py target/keyos/seed-xor-sdk.app target/keyos/seed-xo
 ```
 
 The older SDK CLI can omit `minKeyosVersion` despite `min-keyos-version` being
-configured. Beta 3 rejects that archive as invalid. The check restores the
+configured. Passport rejects that archive as invalid. The check restores the
 configured minimum when needed and re-signs only the manifest with the existing
 publisher identity. It verifies both secp256k1 signatures against that
 identity's public key, the app identity/version and all file hashes; the
@@ -270,7 +268,7 @@ and sixteen packaging tests when `cosign2` is installed. The ones that matter:
 - **Random-source failure produces no part**, and successful reads retain the
   specified double-SHA-256 conditioning.
 - **Packaging takes its version from Cargo**, rejects conflicting legacy
-  metadata, validates the configured Beta 3 minimum, and rejects changed or
+  metadata, validates the configured firmware minimum, and rejects changed or
   unsigned developer signatures and the wrong publisher key. One test signs a
   temporary payload with `cosign2` and checks it with the Python verifier.
 - **An extra combine part is refused** after the declared count; returning from
@@ -288,7 +286,7 @@ and sixteen packaging tests when `cosign2` is installed. The ones that matter:
   have rendered layout checks at both app heights and in both themes. This is
   not coverage of every screen or callback.
 - **No security audit.** Automated tests and SDK compilation are not proof that
-  this beta is safe for live funds.
+  the app is safe for live funds.
 - **Strings are hardcoded English.** No `i18n/` and `include_translations:
   false`, matching the SDK template.
 
